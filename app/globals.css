@@ -306,12 +306,13 @@ main{flex:1}
 .toast{pointer-events:auto;width:100%;max-width:440px;display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--sds-espresso-700);border:1px solid var(--sds-gold-500);border-radius:14px;box-shadow:var(--shadow-lg);font:500 14px/1.3 var(--font-label);color:var(--sds-cream-50)}
 .toast-ic{width:26px;height:26px;border-radius:50%;background:var(--sds-gold-foil);color:var(--text-on-gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .toast-act{font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:12px;white-space:nowrap}
-.sheet-root{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet-root{position:fixed;left:0;right:0;top:0;height:100vh;height:100dvh;z-index:60;display:flex;align-items:flex-end;justify-content:center}
+.sheet-foot{flex-shrink:0;display:flex;flex-direction:column;gap:10px;padding:14px 20px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--border-subtle);background:var(--surface-card)}
 .sheet-back{position:absolute;inset:0;background:rgba(20,12,8,.6);backdrop-filter:blur(3px)}
-.sheet{position:relative;width:100%;max-width:600px;max-height:92vh;display:flex;flex-direction:column;background:var(--surface-card);border:1px solid var(--border-gold);border-bottom:0;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
+.sheet{position:relative;width:100%;max-width:600px;max-height:88vh;max-height:88dvh;display:flex;flex-direction:column;background:var(--surface-card);border:1px solid var(--border-gold);border-bottom:0;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
 .sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border-subtle)}
 .sheet-head h3{font:700 20px/1.2 var(--font-serif);color:var(--sds-gold-400)}
-.sheet-body{overflow:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.sheet-body{flex:1 1 auto;min-height:0;overflow:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
 .sheet-intro{display:flex;gap:16px;align-items:center}
 .sheet-intro p,.sheet-p{font:400 15px/1.5 var(--font-body);color:var(--sds-cream-100);text-wrap:pretty}
 .sheet-p b{color:var(--sds-gold-400)}

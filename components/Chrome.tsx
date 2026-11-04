@@ -130,7 +130,7 @@ export function Toast() {
 }
 
 /* ------------------------------------------------------------ BottomSheet */
-function BottomSheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function BottomSheet({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   const back = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const closing = useRef(false);
@@ -167,6 +167,7 @@ function BottomSheet({ title, onClose, children }: { title: string; onClose: () 
           <button className="iconbtn" onClick={close} aria-label="Fechar"><X size={20} /></button>
         </div>
         <div className="sheet-body">{children}</div>
+        {footer ? <div className="sheet-foot">{footer}</div> : null}
       </div>
     </div>
   );
@@ -188,7 +189,16 @@ export function ProductSheet() {
   const qtyHint = z ? "Quantos " + (z.id === "cento" ? "centos" : "meios centos") : p.min ? `Mínimo de ${p.min} unidades` : fmt(unitPrice) + " cada";
 
   return (
-    <BottomSheet title={p.name} onClose={closeSheet}>
+    <BottomSheet
+      title={p.name}
+      onClose={closeSheet}
+      footer={
+        <>
+          {needFlavor && <p className="warn">Escolha pelo menos 1 sabor para adicionar.</p>}
+          <Button size="lg" full disabled={needFlavor} onClick={addToCart}><Plus size={18} strokeWidth={2.6} /> <span>Adicionar · {fmt(unitPrice * sheet.qty)}</span></Button>
+        </>
+      }
+    >
       <div className="sheet-intro">
         <div className="ring" style={{ backgroundImage: `url('${p.img}')`, width: 88, height: 88 }} />
         <p>{p.desc}</p>
@@ -219,8 +229,6 @@ export function ProductSheet() {
         <QuantityStepper value={sheet.qty} min={min} step={step} onChange={(v) => patchSheet(() => ({ qty: v }))} />
       </div>
       <Field label="Observação deste item (opcional)" multiline placeholder="Ex.: bem sequinhos, separar por sabor..." value={sheet.obs} onChange={(e) => patchSheet(() => ({ obs: e.target.value }))} />
-      {needFlavor && <p className="warn">Escolha pelo menos 1 sabor para adicionar.</p>}
-      <Button size="lg" full disabled={needFlavor} onClick={addToCart}><Plus size={18} strokeWidth={2.6} /> <span>Adicionar · {fmt(unitPrice * sheet.qty)}</span></Button>
     </BottomSheet>
   );
 }
@@ -238,11 +246,18 @@ export function SentSheet() {
     showToast(`Mensagem copiada! Cole no WhatsApp ${WA_LABEL}.`);
   };
   return (
-    <BottomSheet title="Pedido pronto" onClose={() => setSent(null)}>
+    <BottomSheet
+      title="Pedido pronto"
+      onClose={() => setSent(null)}
+      footer={
+        <>
+          <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
+          <Button variant="outline" size="lg" full onClick={copy}><Copy size={18} /> <span>Copiar mensagem</span></Button>
+        </>
+      }
+    >
       <p className="sheet-p">Confira seu pedido e toque em <b>Abrir WhatsApp</b>. Se o WhatsApp não abrir, copie a mensagem e envie para {WA_LABEL}.</p>
       <pre className="sent-pre">{sent}</pre>
-      <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
-      <Button variant="outline" size="lg" full onClick={copy}><Copy size={18} /> <span>Copiar mensagem</span></Button>
     </BottomSheet>
   );
 }
