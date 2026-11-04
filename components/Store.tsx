@@ -108,21 +108,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const total = useMemo(() => cart.reduce((a, it) => a + it.qty * it.price, 0), [cart]);
 
   const buildMessage = useCallback(() => {
-    const L = ["*PEDIDO — SABORES DO SUL*"];
-    if (checkout.custName.trim()) L.push("*Cliente:* " + checkout.custName.trim());
-    L.push("", "*ITENS*");
-    cart.forEach((it, i) => {
-      const q = it.sizeLabel ? `${it.qty}x ${it.sizeLabel}` : `${it.qty} un.`;
-      L.push(`${i + 1}. ${it.name} — ${q} — ${fmt(it.qty * it.price)}`);
-      it.flavors.forEach((f) => L.push("    - " + f));
-      if (it.obs.trim()) L.push("    Obs.: " + it.obs.trim());
+    const LINE = "────────────────────";
+    const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰" };
+    const L = ["🍽️ *Sabores do Sul*", "Olá! Gostaria de fazer um pedido pelo cardápio digital:"];
+    if (checkout.custName.trim()) L.push("", "👤 *Cliente:* " + checkout.custName.trim());
+    L.push("", LINE);
+    cart.forEach((it) => {
+      const cat = BY_ID[it.pid]?.cat ?? "";
+      const base = it.name.replace(/^Salgados /, "");
+      const title = base.charAt(0).toUpperCase() + base.slice(1);
+      L.push("", `${ICON[cat] ?? "🍴"} *${title}${it.sizeLabel ? " · " + it.sizeLabel : ""}*`);
+      it.flavors.forEach((f) => L.push("   • " + f));
+      L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}`);
+      if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
     });
-    L.push("", "*Total:* " + fmt(total));
-    L.push("*Recebimento:* " + (checkout.delivery === "entrega" ? "Entrega" : "Retirada no local"));
-    if (checkout.delivery === "entrega") L.push("*Endereço:* " + (checkout.address.trim() || "a combinar"));
+    L.push("", LINE, "💰 *Total estimado:* " + fmt(total), LINE, "");
+    if (checkout.delivery === "entrega") {
+      L.push("🚚 *Recebimento:* Entrega");
+      L.push("📍 *Endereço / localização:* " + (checkout.address.trim() || "enviarei pelo WhatsApp"));
+    } else {
+      L.push("🏪 *Recebimento:* Retirada no local");
+    }
     const pay = PAY.find((x) => x.id === checkout.pay);
-    L.push("*Pagamento:* " + (pay ? pay.label : "-") + (checkout.pay === "dinheiro" && checkout.troco.trim() ? ` (troco para ${checkout.troco.trim()})` : ""));
-    if (checkout.obsGeral.trim()) L.push("*Observações:* " + checkout.obsGeral.trim());
+    L.push("💳 *Pagamento:* " + (pay ? pay.label : "-") + (checkout.pay === "dinheiro" && checkout.troco.trim() ? ` (troco para ${checkout.troco.trim()})` : ""));
+    if (checkout.obsGeral.trim()) L.push("📝 *Observações:* " + checkout.obsGeral.trim());
+    L.push("", "Aguardo a confirmação do valor final. Obrigado! 🙏");
     return L.join("\n");
   }, [cart, checkout, total]);
 
