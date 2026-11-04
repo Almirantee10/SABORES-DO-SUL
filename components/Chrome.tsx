@@ -42,21 +42,25 @@ export function Header() {
     prev.current = count;
   }, [count]);
 
+  const links = PAGES.map((p) => {
+    const on = p.href === "/" ? path === "/" : path.startsWith(p.href);
+    return <Link key={p.href} href={p.href} className={on ? "on" : ""}>{p.label}</Link>;
+  });
+
   return (
     <header className="header" ref={ref}>
       <div className="header-in">
-        <Link href="/" aria-label="Sabores do Sul — início"><Logo height={44} /></Link>
-        <nav className="nav">
-          {PAGES.map((p) => {
-            const on = p.href === "/" ? path === "/" : path.startsWith(p.href);
-            return <Link key={p.href} href={p.href} className={on ? "on" : ""}>{p.label}</Link>;
-          })}
-        </nav>
-        <Link href="/carrinho" className="cart-link" aria-label="Meu pedido">
-          <BagIcon size={20} />
-          <span className="lbl-t">Meu pedido</span>
-          {count > 0 && <span className="iconbtn-badge" ref={badge}>{count}</span>}
-        </Link>
+        <nav className="nav nav-l" aria-label="Principal">{links.slice(0, 2)}</nav>
+        <Link href="/" className="logo-c" aria-label="Sabores do Sul — início"><Logo height={48} /></Link>
+        <div className="hdr-right">
+          <nav className="nav nav-r" aria-label="Secundário">{links.slice(2)}</nav>
+          <Link href="/carrinho" className="cart-link" aria-label="Meu pedido">
+            <BagIcon size={20} />
+            <span className="lbl-t">Meu pedido</span>
+            {count > 0 && <span className="iconbtn-badge" ref={badge}>{count}</span>}
+          </Link>
+        </div>
+        <nav className="nav nav-all" aria-label="Menu">{links}</nav>
       </div>
       <ScrollBar />
     </header>

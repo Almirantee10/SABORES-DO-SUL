@@ -10,7 +10,6 @@ import { ProductInline } from "@/components/ProductInline";
 import { Reveal, Stagger } from "@/components/Motion";
 import { InstagramIcon, WhatsAppIcon } from "@/components/Brand";
 
-/* eslint-disable @next/next/no-img-element */
 export default function Cardapio() {
   const { showToast } = useStore();
   const [tab, setTab] = useState(CATS[0].id);
@@ -47,7 +46,6 @@ export default function Cardapio() {
       });
     });
     if (noMotion()) return;
-    gsap.fromTo(".mh-logo", { opacity: 0, scale: 0.7, rotate: -12 }, { opacity: 1, scale: 1, rotate: 0, duration: 1.2, ease: "back.out(1.7)" });
     gsap.fromTo(".mh-title", { opacity: 0, y: 30, letterSpacing: "0.3em" }, { opacity: 1, y: 0, letterSpacing: "0.06em", duration: 1.4, delay: 0.15, ease: "expo.out" });
     gsap.fromTo(".mh-rest > *", { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.9, stagger: 0.1, delay: 0.5, ease: "expo.out" });
     gsap.utils.toArray<HTMLElement>(".cat-head").forEach((h) => {
@@ -66,7 +64,6 @@ export default function Cardapio() {
   return (
     <div ref={root}>
       <section className="mh">
-        <img className="mh-logo" src="/assets/logo/logo-badge-circle.png" alt="Sabores do Sul" />
         <h1 className="mh-title">Cardápio</h1>
         <div className="mh-rest">
           <div className="mh-rule"><i /><span>◆</span><i /></div>
