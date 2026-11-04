@@ -23,6 +23,7 @@ type Ctx = {
   patchSheet: (fn: (s: Sheet) => Partial<Sheet>) => void;
   closeSheet: () => void;
   addToCart: () => void;
+  addDirect: (s: Sheet) => void;
   toast: string | null;
   showToast: (t: string) => void;
   sent: string | null;
@@ -82,23 +83,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setSheet((s) => (s ? { ...s, ...fn(s) } : s));
   }, []);
 
-  const addToCart = useCallback(() => {
-    if (!sheet) return;
-    const p = BY_ID[sheet.pid];
-    if (p.flavors && !sheet.flavors.length) return;
-    const z = p.sizes?.find((x) => x.id === sheet.size) || null;
+  const addDirect = useCallback((s: Sheet) => {
+    const p = BY_ID[s.pid];
+    if (p.flavors && !s.flavors.length) return;
+    const z = p.sizes?.find((x) => x.id === s.size) || null;
     const item: CartItem = {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
       pid: p.id, name: p.name, img: p.img, sizeLabel: z ? z.label : "",
-      price: (z ? z.price : p.price) as number, qty: sheet.qty,
+      price: (z ? z.price : p.price) as number, qty: s.qty,
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
-      flavors: sheet.flavors.slice(), obs: sheet.obs || "",
+      flavors: s.flavors.slice(), obs: s.obs || "",
     };
     setCart((c) => c.concat([item]));
-    setSheet(null);
     burst();
     showToast(p.name + " adicionado ao pedido!");
-  }, [sheet, showToast]);
+  }, [showToast]);
+
+  const addToCart = useCallback(() => {
+    if (!sheet) return;
+    addDirect(sheet);
+    setSheet(null);
+  }, [sheet, addDirect]);
 
   const total = useMemo(() => cart.reduce((a, it) => a + it.qty * it.price, 0), [cart]);
 
@@ -127,7 +132,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     patchItem: (uid, p) => setCart((c) => c.map((it) => (it.uid === uid ? { ...it, ...p } : it))),
     removeItem: (uid) => setCart((c) => c.filter((x) => x.uid !== uid)),
     clearCart: () => setCart([]),
-    sheet, openSheet, patchSheet, closeSheet: () => setSheet(null), addToCart,
+    sheet, openSheet, patchSheet, closeSheet: () => setSheet(null), addToCart, addDirect,
     toast, showToast, sent, setSent, buildMessage,
   };
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;

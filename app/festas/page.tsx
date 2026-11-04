@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
-import { BY_ID, CATALOG, RATIO, fmt, img, priceOf } from "@/lib/data";
+import { BY_ID, CATALOG, RATIO, fmt, img, photo, priceOf } from "@/lib/data";
 import { useStore } from "@/components/Store";
 import { Embers, CountUp, ParallaxBg, Reveal, SplitWords, Stagger } from "@/components/Motion";
 import { HeroIntro } from "@/components/HeroIntro";
@@ -9,7 +9,7 @@ import { BagIcon, Button, CategoryTabs, InfoPill, PriceTag, SectionHeading } fro
 import { Plus } from "lucide-react";
 
 const occasions = [
-  { title: "Aniversários e festas", text: "Cento de salgados com os sabores que você escolher, prontos para a mesa.", img: img("salgados-fritos-bandeja") },
+  { title: "Aniversários e festas", text: "Cento de salgados com os sabores que você escolher, prontos para a mesa.", img: photo("bolinhas") },
   { title: "Reuniões e coffee break", text: "Minis de buffet e pão de queijo para receber clientes e equipe com praticidade.", img: img("mini-baguete") },
   { title: "Encontros em família", text: "Bolos caseiros e torta fria para o café da tarde ou uma comemoração especial.", img: img("bolo-laranja") },
 ];
@@ -31,7 +31,7 @@ export default function Festas() {
   return (
     <>
       <section className="hero" style={{ minHeight: 520 }}>
-        <ParallaxBg src={img("minipizza")} overlay="linear-gradient(180deg,rgba(20,12,8,.35),rgba(20,12,8,.75) 60%,#140C08)" />
+        <ParallaxBg src={photo("esfirra")} overlay="linear-gradient(180deg,rgba(20,12,8,.35),rgba(20,12,8,.75) 60%,#140C08)" />
         <Embers count={12} />
         <div className="hero-in" style={{ paddingTop: 120, paddingBottom: 64 }}>
           <HeroIntro label="Festas · Reuniões · Empresas" />
@@ -94,3 +94,4 @@ export default function Festas() {
     </>
   );
 }
+

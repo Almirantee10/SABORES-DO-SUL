@@ -10,6 +10,7 @@ export const PAGES = [
 ];
 
 export const img = (n: string) => `/assets/photos/${n}.png`;
+export const photo = (n: string) => `/assets/photos/${n}.jpg`;
 
 export type Size = { id: "cento" | "meio"; label: string; sub: string; price: number; max?: number };
 export type Product = {
@@ -36,28 +37,28 @@ export const CATALOG: Product[] = [
   {
     id: "fritos", cat: "fritos", name: "Salgados fritos",
     desc: "Coxinha, balãozinho, bolinhas, quibe e mais. Bem sequinhos e dourados.",
-    img: img("salgados-fritos-bandeja"), sizes: cento(70, 35, 5, 4),
+    img: photo("bolinhas"), sizes: cento(70, 35, 5, 4),
     flavors: ["Coxinha de frango", "Balãozinho de calabresa", "Bolinha de carne", "Bolinha de presunto e queijo", "Quibe", "Enroladinho de salsicha", "Quadradinho de creme de milho", "Mini churros de doce de leite"],
   },
   {
     id: "palitinhos", cat: "fritos", name: "Palitinhos",
     desc: "Palitinho de queijo e palitinho de carne de sol, crocantes por fora.",
-    img: img("salgados-fritos-bandeja"), sizes: cento(75, 40, 2, 2),
+    img: photo("bolinhas"), sizes: cento(75, 40, 2, 2),
     flavors: ["Palitinho de queijo", "Palitinho de carne de sol"],
   },
   {
     id: "pastel", cat: "fritos", name: "Mini pastel de feira de carne",
     desc: "O especial da casa: massa fininha e recheio cremoso e generoso.",
-    img: img("salgados-fritos-bandeja"), badge: "Especial", sizes: cento(90, 50),
+    img: photo("pastel"), badge: "Especial", sizes: cento(90, 50),
   },
   {
     id: "assados", cat: "assados", name: "Salgados assados",
     desc: "Esfirras, enroladinho, minipizzas e mini hambúrguer assado.",
-    img: img("minipizza"), sizes: cento(110, 60, 4, 2),
+    img: photo("esfirra"), sizes: cento(110, 60, 4, 2),
     flavors: ["Esfirra de frango", "Esfirra de carne", "Enroladinho de salsicha", "Minipizza de calabresa", "Minipizza de frango", "Mini hambúrguer assado"],
   },
-  { id: "canudinho", cat: "assados", name: "Canudinho recheado de frango", desc: "Casquinha crocante com recheio cremoso. Pedido mínimo: 50 unidades.", img: img("canudinho"), price: 2, min: 50, step: 10 },
-  { id: "casquinhas", cat: "assados", name: "Apenas casquinhas", desc: "Para você rechear do seu jeito. Pedido mínimo: 50 unidades.", img: img("canudinho"), price: 1.2, min: 50, step: 10 },
+  { id: "canudinho", cat: "assados", name: "Canudinho recheado de frango", desc: "Casquinha crocante com recheio cremoso. Pedido mínimo: 50 unidades.", img: photo("canudinho"), price: 2, min: 50, step: 10 },
+  { id: "casquinhas", cat: "assados", name: "Apenas casquinhas", desc: "Para você rechear do seu jeito. Pedido mínimo: 50 unidades.", img: photo("canudinho"), price: 1.2, min: 50, step: 10 },
   { id: "mini-hamburguer", cat: "buffet", name: "Mini hambúrguer gourmet", desc: "Pedido mínimo: 25 unidades.", img: img("mini-hamburguer"), price: 5.5, min: 25, step: 5 },
   { id: "mini-baguete", cat: "buffet", name: "Mini baguete frio", desc: "Pedido mínimo: 30 unidades.", img: img("mini-baguete"), price: 2.9, min: 30, step: 5 },
   { id: "mini-sanduiche", cat: "buffet", name: "Mini sanduíche frio de frango", desc: "Pedido mínimo: 30 unidades.", img: img("mini-sanduiche"), price: 2.75, min: 30, step: 5 },

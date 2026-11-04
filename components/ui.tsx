@@ -95,7 +95,7 @@ export function ProductCard({ name, description, price, unit, image, badge, onOp
 }
 
 /** Pill tabs with a gold indicator that glides between options. */
-export function CategoryTabs({ items, value, onChange }: { items: { id: string; label: string }[]; value: string; onChange: (id: string) => void }) {
+export function CategoryTabs({ items, value, onChange, variant = "pill" }: { items: { id: string; label: string }[]; value: string; onChange: (id: string) => void; variant?: "pill" | "bar" }) {
   const wrap = useRef<HTMLDivElement>(null);
   const ind = useRef<HTMLSpanElement>(null);
   const first = useRef(true);
@@ -109,7 +109,7 @@ export function CategoryTabs({ items, value, onChange }: { items: { id: string; 
     if (sc.scrollWidth > sc.clientWidth) sc.scrollTo({ left: btn.offsetLeft - sc.clientWidth / 2 + btn.offsetWidth / 2, behavior: "smooth" });
   }, [value]);
   return (
-    <div className="tabs" ref={wrap} role="tablist">
+    <div className={`tabs${variant === "bar" ? " tabs-underline" : ""}`} ref={wrap} role="tablist">
       <span className="tabs-ind" ref={ind} />
       {items.map((it) => (
         <button key={it.id} data-id={it.id} role="tab" aria-selected={it.id === value} className={it.id === value ? "on" : ""} onClick={() => onChange(it.id)}>

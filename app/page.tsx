@@ -1,13 +1,13 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { ChefHat, Clock, PartyPopper, ArrowRight } from "lucide-react";
-import { img, MARQUEE } from "@/lib/data";
+import { img, photo, MARQUEE } from "@/lib/data";
 import { Embers, Marquee, ParallaxBg, Reveal, SplitWords, SplitWordsH2, Stagger, Tilt } from "@/components/Motion";
 import { Badge, BagIcon, Button, PriceTag, SectionHeading } from "@/components/ui";
 import { HeroIntro } from "@/components/HeroIntro";
 
 const options = [
-  { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: img("salgados-fritos-bandeja"), href: "/cardapio#fritos" },
-  { title: "Assados", desc: "Esfirras, minipizzas, enroladinho e mini hambúrguer assado.", from: "Cento a partir de", price: 110, unit: "", img: img("minipizza"), href: "/cardapio#assados" },
+  { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: photo("bolinhas"), href: "/cardapio#fritos" },
+  { title: "Assados", desc: "Esfirras, minipizzas, enroladinho e mini hambúrguer assado.", from: "Cento a partir de", price: 110, unit: "", img: photo("esfirra"), href: "/cardapio#assados" },
   { title: "Buffet", desc: "Minis gourmet para festas, reuniões e coffee break.", from: "A partir de", price: 2.75, unit: "unidade", img: img("mini-hamburguer"), href: "/cardapio#buffet" },
 ];
 
@@ -21,7 +21,7 @@ export default function Home() {
   return (
     <>
       <section className="hero">
-        <ParallaxBg src={img("salgados-fritos-bandeja")} overlay="linear-gradient(180deg,rgba(20,12,8,.25) 0%,rgba(20,12,8,.7) 55%,#140C08 100%)" amount={18} />
+        <ParallaxBg src={photo("bolinhas")} overlay="linear-gradient(180deg,rgba(20,12,8,.25) 0%,rgba(20,12,8,.7) 55%,#140C08 100%)" amount={18} />
         <Embers />
         <div className="hero-in">
           <HeroIntro />
@@ -95,3 +95,4 @@ export default function Home() {
     </>
   );
 }
+
