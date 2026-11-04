@@ -52,8 +52,9 @@ export function Header() {
             return <Link key={p.href} href={p.href} className={on ? "on" : ""}>{p.label}</Link>;
           })}
         </nav>
-        <Link href="/carrinho" className="iconbtn" aria-label="Meu pedido">
+        <Link href="/carrinho" className="cart-link" aria-label="Meu pedido">
           <BagIcon size={20} />
+          <span className="lbl-t">Meu pedido</span>
           {count > 0 && <span className="iconbtn-badge" ref={badge}>{count}</span>}
         </Link>
       </div>

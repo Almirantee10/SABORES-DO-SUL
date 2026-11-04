@@ -169,8 +169,12 @@ main{flex:1}
 .pcard-name{font:500 17px/1.25 var(--font-label);color:var(--text-item);text-transform:uppercase}
 .pcard-body p{font:400 14px/1.45 var(--font-body);color:var(--text-muted);text-wrap:pretty}
 .pcard-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:4px}
-.pcard-add{width:36px;height:36px;border-radius:50%;background:var(--sds-gold-foil);color:var(--text-on-gold);display:inline-flex;align-items:center;justify-content:center;transition:transform .4s var(--ease-out)}
-.pcard:hover .pcard-add{transform:rotate(90deg) scale(1.1)}
+.pcard-add{height:38px;padding:0 16px;border-radius:999px;background:var(--sds-gold-foil);color:var(--text-on-gold);display:inline-flex;align-items:center;justify-content:center;gap:6px;font:700 13px/1 var(--font-label);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;transition:transform .3s var(--ease-out),box-shadow .3s}
+.pcard:hover .pcard-add{transform:scale(1.06);box-shadow:0 0 20px rgba(230,178,45,.4)}
+.cart-link{display:inline-flex;align-items:center;gap:10px;height:42px;padding:0 16px 0 14px;border-radius:999px;border:1px solid var(--border-gold-strong);color:var(--sds-gold-400);font:700 13px/1 var(--font-label);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;position:relative;transition:background .25s}
+.cart-link:hover{background:rgba(230,178,45,.12);color:var(--sds-gold-300)}
+.cart-link .iconbtn-badge{top:-7px;right:-4px}
+@media (max-width:520px){.cart-link span.lbl-t{display:none}.cart-link{padding:0 12px}}
 
 /* festas */
 .occ{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:border-color .3s,transform .4s var(--ease-out)}

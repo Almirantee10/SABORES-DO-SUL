@@ -87,7 +87,7 @@ export function ProductCard({ name, description, price, unit, image, badge, onOp
         <p>{description}</p>
         <div className="pcard-foot">
           <PriceTag value={price} unit={unit ? (unit === "meio cento" ? "meio cento" : unit) : undefined} />
-          <span className="pcard-add" aria-label={`Adicionar ${name}`}><Plus size={18} strokeWidth={2.6} /></span>
+          <span className="pcard-add" aria-label={`Adicionar ${name}`}><Plus size={16} strokeWidth={2.8} /> Adicionar</span>
         </div>
       </div>
     </div>
