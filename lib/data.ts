@@ -83,8 +83,8 @@ export const CATALOG: Product[] = [
     img: img("pao-de-queijo-congelado"),
     sizes: [{ id: "pacote", label: "Pacote", sub: "20 unidades", price: 23 }],
   },
-  { id: "suco-caixinha", cat: "bebidas", name: "Suco de caixinha", desc: "Suco em caixinha, gelado e pronto para servir.", img: "", price: 12, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
-  { id: "suco-natural", cat: "bebidas", name: "Suco natural", desc: "Suco natural de fruta.", img: "", price: 22, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
+  { id: "suco-caixinha", cat: "bebidas", name: "Suco de caixinha 1L", desc: "Suco em caixinha de 1 litro, gelado e pronto para servir.", img: "", price: 12, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
+  { id: "suco-natural", cat: "bebidas", name: "Suco natural 1L", desc: "Suco natural de fruta, 1 litro.", img: "", price: 22, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
   { id: "coca-2l", cat: "bebidas", name: "Coca-Cola 2L", desc: "Garrafa de 2 litros.", img: "", price: 16, min: 1, step: 1 },
   { id: "guarana-2l", cat: "bebidas", name: "Guaraná 2L", desc: "Garrafa de 2 litros.", img: "", price: 15, min: 1, step: 1 },
 ];
