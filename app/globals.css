@@ -261,6 +261,13 @@ main{flex:1}
   .btn-lg{white-space:normal;text-align:center;line-height:1.2;height:auto;min-height:56px;padding-top:10px;padding-bottom:10px}
 }
 
+.ring-icon{display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#3a2a1c,#1a100d);color:var(--sds-gold-400)}
+.pi-ring.ring-icon{width:104px;height:104px}
+.citem-ring{box-shadow:none}
+.when{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+input[type=date],input[type=time]{color-scheme:dark}
+@media (max-width:560px){.pi-ring.ring-icon{width:76px;height:76px}.when{grid-template-columns:1fr 1fr}}
+
 /* festas */
 .occ{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:border-color .3s,transform .4s var(--ease-out)}
 .occ:hover{border-color:var(--border-gold-strong);transform:translateY(-6px)}

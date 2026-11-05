@@ -1,14 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { BY_ID, PAY, fmt } from "@/lib/data";
+import { BY_ID, PAY, fmt, fmtDate } from "@/lib/data";
 
 export type CartItem = {
   uid: string; pid: string; name: string; img: string; sizeLabel: string;
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
 };
 export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string };
-export type Checkout = { custName: string; delivery: "retirada" | "entrega"; address: string; pay: string | null; troco: string; obsGeral: string };
+export type Checkout = { custName: string; delivery: "retirada" | "entrega"; address: string; date: string; time: string; pay: string | null; troco: string; obsGeral: string };
 
 type Ctx = {
   cart: CartItem[];
@@ -18,6 +18,8 @@ type Ctx = {
   patchItem: (uid: string, p: Partial<CartItem>) => void;
   removeItem: (uid: string) => void;
   clearCart: () => void;
+  /** after the order is handed to WhatsApp: empties the cart and the order fields, keeps the name */
+  finishOrder: () => void;
   sheet: Sheet | null;
   openSheet: (pid: string) => void;
   patchSheet: (fn: (s: Sheet) => Partial<Sheet>) => void;
@@ -36,7 +38,7 @@ const StoreCtx = createContext<Ctx>(null as unknown as Ctx);
 export const useStore = () => useContext(StoreCtx);
 
 const LS = "sds-pedido-next-v1";
-const EMPTY: Checkout = { custName: "", delivery: "retirada", address: "", pay: null, troco: "", obsGeral: "" };
+const EMPTY: Checkout = { custName: "", delivery: "retirada", address: "", date: "", time: "", pay: null, troco: "", obsGeral: "" };
 
 export const burst = () => window.dispatchEvent(new CustomEvent("sds:burst"));
 
@@ -89,7 +91,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const z = p.sizes?.find((x) => x.id === s.size) || null;
     const item: CartItem = {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-      pid: p.id, name: p.name, img: p.img, sizeLabel: z ? z.label : "",
+      pid: p.id, name: p.name, img: p.img,
+      sizeLabel: z ? (z.id === "porcao" || z.id === "pacote" ? `${z.label} de ${z.sub.replace(" unidades", " un.")}` : z.label) : "",
       price: (z ? z.price : p.price) as number, qty: s.qty,
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
       flavors: s.flavors.slice(), obs: s.obs || "",
@@ -109,15 +112,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const buildMessage = useCallback(() => {
     const LINE = "────────────────────";
-    const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰" };
-    const L = ["🍽️ *Sabores do Sul*", "Olá! Gostaria de fazer um pedido pelo cardápio digital:"];
-    if (checkout.custName.trim()) L.push("", "👤 *Cliente:* " + checkout.custName.trim());
-    L.push("", LINE);
+    const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰", bebidas: "🥤" };
+    const L = ["👤 *" + checkout.custName.trim() + "*", "", LINE];
     cart.forEach((it) => {
       const cat = BY_ID[it.pid]?.cat ?? "";
       const base = it.name.replace(/^Salgados /, "");
       const title = base.charAt(0).toUpperCase() + base.slice(1);
-      L.push("", `${ICON[cat] ?? "🍴"} *${title}${it.sizeLabel ? " · " + it.sizeLabel : ""}*`);
+      const icon = it.pid.startsWith("pq-") ? "🧀" : ICON[cat] ?? "🍴";
+      L.push("", `${icon} *${title}${it.sizeLabel ? " · " + it.sizeLabel : ""}*`);
       it.flavors.forEach((f) => L.push("   • " + f));
       L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}`);
       if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
@@ -129,6 +131,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     } else {
       L.push("🏪 *Recebimento:* Retirada no local");
     }
+    L.push(`🗓️ *${checkout.delivery === "entrega" ? "Data da entrega" : "Data da retirada"}:* ${fmtDate(checkout.date)}`);
+    L.push(`⏰ *${checkout.delivery === "entrega" ? "Horário da entrega" : "Horário da retirada"}:* ${checkout.time}`);
     const pay = PAY.find((x) => x.id === checkout.pay);
     L.push("💳 *Pagamento:* " + (pay ? pay.label : "-") + (checkout.pay === "dinheiro" && checkout.troco.trim() ? ` (troco para ${checkout.troco.trim()})` : ""));
     if (checkout.obsGeral.trim()) L.push("📝 *Observações:* " + checkout.obsGeral.trim());
@@ -142,6 +146,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     patchItem: (uid, p) => setCart((c) => c.map((it) => (it.uid === uid ? { ...it, ...p } : it))),
     removeItem: (uid) => setCart((c) => c.filter((x) => x.uid !== uid)),
     clearCart: () => setCart([]),
+    finishOrder: () => {
+      setCart([]);
+      setCo((c) => ({ ...EMPTY, custName: c.custName }));
+    },
     sheet, openSheet, patchSheet, closeSheet: () => setSheet(null), addToCart, addDirect,
     toast, showToast, sent, setSent, buildMessage,
   };

@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { fmt, maxFlavors, type Product } from "@/lib/data";
 import { gsap, noMotion } from "@/lib/gsap";
 import { useStore } from "./Store";
-import { Badge, OptionRow, QuantityStepper } from "./ui";
+import { Badge, Field, OptionRow, QuantityStepper, Thumb } from "./ui";
 
 /** A product with every choice (size, flavors, quantity) open on the card. */
 export function ProductInline({ p }: { p: Product }) {
@@ -13,6 +13,7 @@ export function ProductInline({ p }: { p: Product }) {
   const [size, setSize] = useState<string | null>(p.sizes ? p.sizes[0].id : null);
   const [flavors, setFlavors] = useState<string[]>([]);
   const [qty, setQty] = useState(p.min || 1);
+  const [obs, setObs] = useState("");
   const btn = useRef<HTMLButtonElement>(null);
 
   const z = p.sizes?.find((x) => x.id === size) || null;
@@ -33,8 +34,9 @@ export function ProductInline({ p }: { p: Product }) {
 
   const add = () => {
     if (need) return;
-    addDirect({ pid: p.id, size, flavors, qty, obs: "" });
+    addDirect({ pid: p.id, size, flavors, qty, obs: obs.trim() });
     setFlavors([]);
+    setObs("");
     setQty(min);
     if (!noMotion() && btn.current) gsap.fromTo(btn.current, { scale: 0.96 }, { scale: 1, duration: 0.6, ease: "elastic.out(1,.5)" });
   };
@@ -49,7 +51,7 @@ export function ProductInline({ p }: { p: Product }) {
           <h3>{p.name}{p.badge ? <Badge>{p.badge}</Badge> : null}</h3>
           <p>{p.desc}</p>
         </div>
-        <div className="ring pi-ring" style={{ backgroundImage: `url('${p.img}')` }} />
+        <Thumb src={p.img} icon={44} className="pi-ring" />
       </header>
 
       {p.sizes && (
@@ -75,8 +77,9 @@ export function ProductInline({ p }: { p: Product }) {
       )}
 
       <div className="pi-foot">
+        {p.ask && <Field label={p.ask} placeholder="Ex.: uva, laranja, maracujá" value={obs} onChange={(e) => setObs(e.target.value)} />}
         <div className="pi-qty">
-          <div><span className="lbl">Quantidade</span><small>{z ? (z.id === "cento" ? "Quantos centos" : "Quantos meios centos") : p.min ? `Mínimo de ${p.min} unidades` : `${fmt(unit)} cada`}</small></div>
+          <div><span className="lbl">Quantidade</span><small>{z ? (z.id === "cento" ? "Quantos centos" : z.id === "meio" ? "Quantos meios centos" : "Quantas porções") : p.min && p.min > 1 ? `Mínimo de ${p.min} unidades` : `${fmt(unit)} cada`}</small></div>
           <QuantityStepper value={qty} min={min} step={step} onChange={setQty} />
         </div>
         <button ref={btn} type="button" className="btn btn-primary btn-lg btn-full" disabled={need} onClick={add}>

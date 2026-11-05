@@ -239,8 +239,13 @@ export function ProductSheet() {
 
 /* -------------------------------------------------------------- SentSheet */
 export function SentSheet() {
-  const { sent, setSent, showToast } = useStore();
+  const { sent, setSent, showToast, finishOrder } = useStore();
   if (!sent) return null;
+  const opened = () => {
+    // the order is on its way to WhatsApp: start the next one with an empty cart
+    finishOrder();
+    showToast("Pedido enviado! Obrigado pela preferência.");
+  };
   const copy = async () => {
     try { await navigator.clipboard.writeText(sent); }
     catch {
@@ -255,7 +260,7 @@ export function SentSheet() {
       onClose={() => setSent(null)}
       footer={
         <>
-          <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
+          <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent)} target="_blank" rel="noopener noreferrer" onClick={opened}><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
           <Button variant="outline" size="lg" full onClick={copy}><Copy size={18} /> <span>Copiar mensagem</span></Button>
         </>
       }

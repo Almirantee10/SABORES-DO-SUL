@@ -12,7 +12,7 @@ export const PAGES = [
 export const img = (n: string) => `/assets/photos/${n}.png`;
 export const photo = (n: string) => `/assets/photos/${n}.jpg`;
 
-export type Size = { id: "cento" | "meio"; label: string; sub: string; price: number; max?: number };
+export type Size = { id: string; label: string; sub: string; price: number; max?: number };
 export type Product = {
   id: string;
   cat: string;
@@ -20,6 +20,8 @@ export type Product = {
   desc: string;
   img: string;
   badge?: string;
+  /** shows a free-text field on the card (e.g. the juice flavor) */
+  ask?: string;
   sizes?: Size[];
   flavors?: string[];
   pick?: number;
@@ -69,8 +71,22 @@ export const CATALOG: Product[] = [
   },
   { id: "bolo-simples", cat: "bolos", name: "Bolo caseiro sem cobertura", desc: "Simples, macio e do jeitinho caseiro.", img: img("bolo-milho-laranja"), price: 50, pick: 1, flavors: ["Bolo de milho", "Bolo de laranja"] },
   { id: "torta", cat: "bolos", name: "Torta fria", desc: "Cremosa e bem servida, perfeita para reunir a família.", img: img("torta-fria"), price: 60 },
-  { id: "pq-assado", cat: "bolos", name: "Pão de queijo assado", desc: "Macio por dentro e levemente dourado por fora. Feito com queijo de verdade.", img: img("pao-de-queijo-assado"), price: 23 },
-  { id: "pq-congelado", cat: "bolos", name: "Pão de queijo congelado", desc: "Prático e delicioso! É só assar e ter pão de queijo quentinho a qualquer hora.", img: img("pao-de-queijo-congelado"), price: 23 },
+  {
+    id: "pq-assado", cat: "bolos", name: "Pão de queijo assado",
+    desc: "Macio por dentro e levemente dourado por fora. Feito com queijo de verdade. Porção com 15 unidades.",
+    img: img("pao-de-queijo-assado"),
+    sizes: [{ id: "porcao", label: "Porção", sub: "15 unidades", price: 23 }],
+  },
+  {
+    id: "pq-congelado", cat: "bolos", name: "Pão de queijo congelado",
+    desc: "Prático e delicioso! É só assar e ter pão de queijo quentinho a qualquer hora. Pacote com 20 unidades.",
+    img: img("pao-de-queijo-congelado"),
+    sizes: [{ id: "pacote", label: "Pacote", sub: "20 unidades", price: 23 }],
+  },
+  { id: "suco-caixinha", cat: "bebidas", name: "Suco de caixinha", desc: "Suco em caixinha, gelado e pronto para servir.", img: "", price: 12, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
+  { id: "suco-natural", cat: "bebidas", name: "Suco natural", desc: "Suco natural de fruta.", img: "", price: 22, min: 1, step: 1, ask: "Sabor desejado (opcional)" },
+  { id: "coca-2l", cat: "bebidas", name: "Coca-Cola 2L", desc: "Garrafa de 2 litros.", img: "", price: 16, min: 1, step: 1 },
+  { id: "guarana-2l", cat: "bebidas", name: "Guaraná 2L", desc: "Garrafa de 2 litros.", img: "", price: 15, min: 1, step: 1 },
 ];
 
 export const BY_ID: Record<string, Product> = Object.fromEntries(CATALOG.map((p) => [p.id, p]));
@@ -80,6 +96,7 @@ export const CATS = [
   { id: "assados", label: "Assados", title: "Salgados assados" },
   { id: "buffet", label: "Buffet", title: "Buffet" },
   { id: "bolos", label: "Bolos e especiais", title: "Bolos e especiais" },
+  { id: "bebidas", label: "Bebidas", title: "Bebidas" },
 ];
 
 export const TAB_INFO: Record<string, { label: string; value: string }[]> = {
@@ -87,6 +104,7 @@ export const TAB_INFO: Record<string, { label: string; value: string }[]> = {
   assados: [{ label: "Cento", value: "até 4 sabores" }, { label: "Pedido mínimo", value: "50 unidades" }],
   buffet: [{ label: "Pedido mínimo", value: "25 a 30 unidades" }],
   bolos: [{ label: "Tudo", value: "feito sob encomenda" }],
+  bebidas: [{ label: "Preço", value: "por unidade" }],
 };
 
 export const PAY = [
@@ -106,7 +124,10 @@ export const fmt = (v: number) =>
 export const waUrl = (text: string) => `https://wa.me/${WA}?text=${encodeURIComponent(text)}`;
 
 export const unitOf = (p: Product) => (p.sizes ? "meio cento" : p.min ? "unidade" : "");
-export const priceOf = (p: Product) => (p.sizes ? p.sizes[1].price : (p.price as number));
+export const priceOf = (p: Product) => (p.sizes ? (p.sizes[1] ?? p.sizes[0]).price : (p.price as number));
+
+/** "06/11/2026" from the value of an <input type="date"> */
+export const fmtDate = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "");
 export const maxFlavors = (p: Product, sizeId: string | null) => {
   if (!p.flavors) return 0;
   if (p.pick) return p.pick;

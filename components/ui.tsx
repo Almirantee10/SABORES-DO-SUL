@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, type ReactNode } from "react";
-import { Minus, Package, Plus, ShoppingBag } from "lucide-react";
+import { CupSoda, Minus, Package, Plus, ShoppingBag } from "lucide-react";
 import { fmt } from "@/lib/data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { Magnetic, Reveal } from "./Motion";
@@ -29,6 +29,17 @@ export function Button({ variant = "primary", size = "md", full, href, external,
 }
 
 export const BagIcon = ({ size = 18 }: { size?: number }) => <ShoppingBag size={size} strokeWidth={2.2} />;
+
+/** Round gold-ringed photo; products without a photo (drinks) get an icon instead. */
+export function Thumb({ src, size, icon = 40, className = "" }: { src: string; size?: number; icon?: number; className?: string }) {
+  const box = size ? { width: size, height: size } : {};
+  if (src) return <div className={`ring ${className}`} style={{ ...box, backgroundImage: `url('${src}')` }} />;
+  return (
+    <div className={`ring ring-icon ${className}`} style={box}>
+      <CupSoda size={icon} strokeWidth={1.6} />
+    </div>
+  );
+}
 
 export function Badge({ children }: { children: ReactNode }) {
   return <span className="badge">{children}</span>;
