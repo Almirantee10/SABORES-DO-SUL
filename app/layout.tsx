@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Montserrat, Playfair_Display, Ubuntu } from "next/font/google";
 import "./globals.css";
 import { StoreProvider } from "@/components/Store";
+import { CatalogProvider } from "@/components/Catalog";
 import { Balloons, CartBar, Footer, Header, ProductSheet, SentSheet, Toast } from "@/components/Chrome";
 
 const serif = Playfair_Display({ subsets: ["latin"], weight: ["600", "700", "800"], variable: "--f-serif", display: "swap" });
@@ -20,18 +21,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR" className={`${serif.variable} ${display.variable} ${body.variable}`}>
       <body>
         <noscript><style>{`[data-stagger]>*{opacity:1!important}`}</style></noscript>
-        <StoreProvider>
-          <div className="shell">
-            <Header />
-            <main>{children}</main>
-            <Footer />
-          </div>
-          <CartBar />
-          <Toast />
-          <ProductSheet />
-          <SentSheet />
-          <Balloons />
-        </StoreProvider>
+        <CatalogProvider>
+          <StoreProvider>
+            <div className="shell">
+              <Header />
+              <main>{children}</main>
+              <Footer />
+            </div>
+            <CartBar />
+            <Toast />
+            <ProductSheet />
+            <SentSheet />
+            <Balloons />
+          </StoreProvider>
+        </CatalogProvider>
       </body>
     </html>
   );

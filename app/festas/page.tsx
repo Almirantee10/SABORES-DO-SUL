@@ -1,11 +1,12 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { BY_ID, CATALOG, RATIO, fmt, img, photo, priceOf } from "@/lib/data";
+import { RATIO, fmt, img, photo, priceOf } from "@/lib/data";
 import { useStore } from "@/components/Store";
+import { useCatalog } from "@/components/Catalog";
 import { Embers, CountUp, ParallaxBg, Reveal, SplitWords, Stagger } from "@/components/Motion";
 import { HeroIntro } from "@/components/HeroIntro";
-import { BagIcon, Button, CategoryTabs, InfoPill, PriceTag, SectionHeading } from "@/components/ui";
+import { BagIcon, Button, CategoryTabs, InfoPill, PriceTag, SectionHeading, Thumb } from "@/components/ui";
 import { Plus } from "lucide-react";
 
 const occasions = [
@@ -17,6 +18,7 @@ const eventTypes = [{ id: "aniversario", label: "Festa" }, { id: "reuniao", labe
 
 export default function Festas() {
   const { openSheet } = useStore();
+  const { products, byId, open: shopOpen } = useCatalog();
   const [guests, setGuests] = useState(40);
   const [type, setType] = useState("aniversario");
 
@@ -24,9 +26,10 @@ export default function Festas() {
   const total = Math.ceil((guests * per) / 50) * 50;
   const centos = Math.floor(total / 100);
   const meio = total % 100 ? 1 : 0;
-  const price = centos * 70 + meio * 35;
+  const fritos = byId["fritos"]?.sizes;
+  const price = centos * (fritos?.[0]?.price ?? 70) + meio * (fritos?.[1]?.price ?? 35);
   const text = [centos ? centos + (centos > 1 ? " centos" : " cento") : "", meio ? "meio cento" : ""].filter(Boolean).join(" + ");
-  const buffet = CATALOG.filter((p) => p.cat === "buffet");
+  const buffet = products.filter((p) => p.cat === "buffet");
 
   return (
     <>
@@ -82,11 +85,13 @@ export default function Festas() {
         <Stagger className="grid-auto" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(100%,240px),1fr))", gap: 16 }}>
           {buffet.map((b) => (
             <div className="bcard" key={b.id}>
-              <div className="ring" style={{ backgroundImage: `url('${b.img}')` }} />
+              <Thumb src={b.img} size={150} icon={56} />
               <h3>{b.name}</h3>
-              <PriceTag value={priceOf(BY_ID[b.id])} unit="unidade" />
-              <InfoPill label="Pedido mínimo" value={`${b.min} unidades`} />
-              <Button variant="outline" size="sm" onClick={() => openSheet(b.id)}><Plus size={16} /> <span>Adicionar</span></Button>
+              <PriceTag value={priceOf(b)} unit="unidade" />
+              {b.min && b.min > 1 ? <InfoPill label="Pedido mínimo" value={`${b.min} unidades`} /> : null}
+              <Button variant="outline" size="sm" disabled={!!b.soldOut || !shopOpen} onClick={() => openSheet(b.id)}>
+                {b.soldOut ? <span>Esgotado</span> : !shopOpen ? <span>Fechado</span> : <><Plus size={16} /> <span>Adicionar</span></>}
+              </Button>
             </div>
           ))}
         </Stagger>

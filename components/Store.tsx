@@ -1,10 +1,11 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import { BY_ID, PAY, fmt, fmtDate } from "@/lib/data";
+import { PAY, fmt, fmtDate } from "@/lib/data";
+import { useCatalog } from "./Catalog";
 
 export type CartItem = {
-  uid: string; pid: string; name: string; img: string; sizeLabel: string;
+  uid: string; pid: string; cat?: string; name: string; img: string; sizeLabel: string;
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
 };
 export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string };
@@ -50,6 +51,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sent, setSent] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const tt = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const { byId, open: shopOpen } = useCatalog();
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restoring the saved cart after hydration */
@@ -76,22 +78,26 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openSheet = useCallback((pid: string) => {
-    const p = BY_ID[pid];
+    const p = byId[pid];
+    if (!p || p.soldOut || !shopOpen) return;
     burst();
     setSheet({ pid, size: p.sizes ? p.sizes[0].id : null, flavors: [], qty: p.min || 1, obs: "" });
-  }, []);
+  }, [byId, shopOpen]);
 
   const patchSheet = useCallback((fn: (s: Sheet) => Partial<Sheet>) => {
     setSheet((s) => (s ? { ...s, ...fn(s) } : s));
   }, []);
 
   const addDirect = useCallback((s: Sheet) => {
-    const p = BY_ID[s.pid];
+    const p = byId[s.pid];
+    if (!p) return;
+    if (!shopOpen) { showToast("Estamos fechados no momento."); return; }
+    if (p.soldOut) { showToast(p.name + " está esgotado."); return; }
     if (p.flavors && !s.flavors.length) return;
     const z = p.sizes?.find((x) => x.id === s.size) || null;
     const item: CartItem = {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
-      pid: p.id, name: p.name, img: p.img,
+      pid: p.id, cat: p.cat, name: p.name, img: p.img,
       sizeLabel: z ? (z.id === "porcao" || z.id === "pacote" ? `${z.label} de ${z.sub.replace(" unidades", " un.")}` : z.label) : "",
       price: (z ? z.price : p.price) as number, qty: s.qty,
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
@@ -100,7 +106,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCart((c) => c.concat([item]));
     burst();
     showToast(p.name + " adicionado ao pedido!");
-  }, [showToast]);
+  }, [showToast, byId, shopOpen]);
 
   const addToCart = useCallback(() => {
     if (!sheet) return;
@@ -115,7 +121,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰", bebidas: "🥤" };
     const L = ["👤 *" + checkout.custName.trim() + "*", "", LINE];
     cart.forEach((it) => {
-      const cat = BY_ID[it.pid]?.cat ?? "";
+      const cat = it.cat ?? byId[it.pid]?.cat ?? "";
       const base = it.name.replace(/^Salgados /, "");
       const title = base.charAt(0).toUpperCase() + base.slice(1);
       const icon = it.pid.startsWith("pq-") ? "🧀" : ICON[cat] ?? "🍴";
@@ -138,7 +144,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (checkout.obsGeral.trim()) L.push("📝 *Observações:* " + checkout.obsGeral.trim());
     L.push("", "Aguardo a confirmação do valor final. Obrigado! 🙏");
     return L.join("\n");
-  }, [cart, checkout, total]);
+  }, [cart, checkout, total, byId]);
 
   const value: Ctx = {
     cart, total, checkout, hydrated,

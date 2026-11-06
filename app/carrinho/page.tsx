@@ -6,6 +6,8 @@ import { ArrowLeft, Banknote, MapPin, MessageSquare, ShoppingBag, Trash2, User }
 import { PAY, fmt } from "@/lib/data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
+import { useCatalog } from "@/components/Catalog";
+import { ShopStatus } from "@/components/ShopStatus";
 import { WhatsAppIcon } from "@/components/Brand";
 import { Button, Field, OptionRow, PriceTag, QuantityStepper, SectionHeading, Thumb } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Motion";
@@ -13,6 +15,7 @@ import { CountUp, Reveal } from "@/components/Motion";
 export default function Carrinho() {
   const { cart, total, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated } = useStore();
   const root = useRef<HTMLDivElement>(null);
+  const { open: shopOpen } = useCatalog();
 
   // earliest date the customer can pick; read in the browser so the page can still be prerendered
   const [today, setToday] = useState("");
@@ -40,7 +43,7 @@ export default function Carrinho() {
     !checkout.time && "o horário",
     !checkout.pay && "a forma de pagamento",
   ].filter(Boolean) as string[];
-  const cantSend = missing.length > 0;
+  const cantSend = missing.length > 0 || !shopOpen;
   const send = () => { if (cantSend || !cart.length) return; setSent(buildMessage()); };
 
   const verb = checkout.delivery === "entrega" ? "entrega" : "retirada";
@@ -51,6 +54,7 @@ export default function Carrinho() {
         <Link href="/cardapio" className="iconbtn" aria-label="Voltar ao cardápio"><ArrowLeft size={20} /></Link>
         <h1>Meu pedido</h1>
       </div>
+      {!shopOpen && <ShopStatus compact />}
 
       {hydrated && cart.length === 0 && (
         <Reveal className="empty">
@@ -116,7 +120,8 @@ export default function Carrinho() {
             </div>
             <p className="note" style={{ textAlign: "left", marginTop: -10 }}>Taxa de entrega, se houver, é combinada pelo WhatsApp.</p>
             <Button variant="whatsapp" size="lg" full disabled={cantSend} onClick={send}><WhatsAppIcon size={22} /> <span>Enviar pedido pelo WhatsApp</span></Button>
-            {cantSend && <p className="warn" style={{ marginTop: -10 }}>Para enviar, preencha: {missing.join(", ")}.</p>}
+            {!shopOpen && <p className="warn" style={{ marginTop: -10 }}>Estamos fechados no momento. O envio de pedidos está pausado.</p>}
+            {shopOpen && cantSend && <p className="warn" style={{ marginTop: -10 }}>Para enviar, preencha: {missing.join(", ")}.</p>}
           </div>
         </div>
       )}

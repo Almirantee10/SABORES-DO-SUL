@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Copy, Plus, X } from "lucide-react";
-import { BY_ID, PAGES, fmt, maxFlavors, waUrl, WA_LABEL } from "@/lib/data";
+import { PAGES, fmt, maxFlavors, waUrl, WA_LABEL } from "@/lib/data";
+import { useCatalog } from "./Catalog";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "./Store";
 import { Logo, WhatsAppIcon } from "./Brand";
@@ -76,7 +77,10 @@ export function Footer() {
         <div className="footer-nav">
           {PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
         </div>
-        <div className="footer-tag">Qualidade e sabor<br />que fazem a diferença!</div>
+        <div className="footer-tag">
+          Qualidade e sabor<br />que fazem a diferença!
+          <div><Link href="/admin" className="footer-admin">Área restrita</Link></div>
+        </div>
       </div>
     </footer>
   );
@@ -86,7 +90,7 @@ export function Footer() {
 export function CartBar() {
   const path = usePathname();
   const { cart, total, sheet, sent } = useStore();
-  const show = cart.length > 0 && path !== "/carrinho" && !sheet && !sent;
+  const show = cart.length > 0 && path !== "/carrinho" && !path.startsWith("/admin") && !sheet && !sent;
   const ref = useRef<HTMLDivElement>(null);
   useGSAP(() => {
     if (!show || noMotion()) return;
@@ -180,8 +184,10 @@ function BottomSheet({ title, onClose, children, footer }: { title: string; onCl
 /* ----------------------------------------------------------- ProductSheet */
 export function ProductSheet() {
   const { sheet, patchSheet, closeSheet, addToCart } = useStore();
+  const { byId } = useCatalog();
   if (!sheet) return null;
-  const p = BY_ID[sheet.pid];
+  const p = byId[sheet.pid];
+  if (!p) return null;
   const z = p.sizes?.find((x) => x.id === sheet.size) || null;
   const unitPrice = (z ? z.price : p.price) as number;
   const max = maxFlavors(p, sheet.size);

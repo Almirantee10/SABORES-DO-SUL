@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { CATALOG, CATS, IG_URL, TAB_INFO, WA_LABEL } from "@/lib/data";
+import { CATS, IG_URL, TAB_INFO, WA_LABEL } from "@/lib/data";
+import { useCatalog } from "@/components/Catalog";
+import { ShopStatus } from "@/components/ShopStatus";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { CategoryTabs, InfoPill } from "@/components/ui";
@@ -12,6 +14,7 @@ import { InstagramIcon, WhatsAppIcon } from "@/components/Brand";
 
 export default function Cardapio() {
   const { showToast } = useStore();
+  const { products } = useCatalog();
   const [tab, setTab] = useState(CATS[0].id);
   const [copied, setCopied] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -65,6 +68,7 @@ export default function Cardapio() {
     <div ref={root}>
       <section className="mh">
         <h1 className="mh-title">Cardápio</h1>
+        <ShopStatus />
         <div className="mh-rest">
           <div className="mh-rule"><i /><span>◆</span><i /></div>
           <div className="mh-sub">Salgados · Pães · Cucas · Palmas-TO</div>
@@ -91,7 +95,7 @@ export default function Cardapio() {
               </div>
             </div>
             <Stagger className="pi-list">
-              {CATALOG.filter((p) => p.cat === c.id).map((p) => <ProductInline key={p.id} p={p} />)}
+              {products.filter((p) => p.cat === c.id).map((p) => <ProductInline key={p.id} p={p} />)}
             </Stagger>
           </div>
         ))}

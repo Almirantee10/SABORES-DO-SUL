@@ -22,6 +22,8 @@ export type Product = {
   badge?: string;
   /** shows a free-text field on the card (e.g. the juice flavor) */
   ask?: string;
+  /** out of stock: still listed, but cannot be ordered */
+  soldOut?: boolean;
   sizes?: Size[];
   flavors?: string[];
   pick?: number;
