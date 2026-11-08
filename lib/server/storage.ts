@@ -2,7 +2,7 @@ import { get, put } from "@vercel/blob";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
-import { defaultStore, type StoreData } from "@/lib/store-data";
+import { defaultStore, withDescUpdates, type StoreData } from "@/lib/store-data";
 
 const KEY = "store.json";
 const hasBlob = () => !!process.env.BLOB_READ_WRITE_TOKEN;
@@ -13,10 +13,10 @@ export async function readStore(): Promise<StoreData> {
   if (hasBlob()) {
     const res = await get(KEY, { access: "public", useCache: false });
     if (!res || res.statusCode !== 200) return defaultStore();
-    return (await new Response(res.stream).json()) as StoreData;
+    return withDescUpdates((await new Response(res.stream).json()) as StoreData);
   }
   try {
-    return JSON.parse(await fs.readFile(LOCAL, "utf8")) as StoreData;
+    return withDescUpdates(JSON.parse(await fs.readFile(LOCAL, "utf8")) as StoreData);
   } catch {
     return defaultStore();
   }
