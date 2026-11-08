@@ -63,9 +63,9 @@ export const CATALOG: Product[] = [
   },
   { id: "canudinho", cat: "assados", name: "Canudinho recheado de frango", desc: "Casquinha crocante com recheio cremoso. Pedido mínimo: 50 unidades.", img: photo("canudinho"), price: 2, min: 50, step: 10 },
   { id: "casquinhas", cat: "assados", name: "Apenas casquinhas", desc: "Para você rechear do seu jeito. Pedido mínimo: 50 unidades.", img: photo("canudinho"), price: 1.2, min: 50, step: 10 },
-  { id: "mini-hamburguer", cat: "buffet", name: "Mini hambúrguer gourmet", desc: "Pedido mínimo: 25 unidades.", img: img("mini-hamburguer"), price: 5.5, min: 25, step: 5 },
-  { id: "mini-baguete", cat: "buffet", name: "Mini baguete frio", desc: "Pedido mínimo: 30 unidades.", img: img("mini-baguete"), price: 2.9, min: 30, step: 5 },
-  { id: "mini-sanduiche", cat: "buffet", name: "Mini sanduíche frio de frango", desc: "Pedido mínimo: 30 unidades.", img: img("mini-sanduiche"), price: 2.75, min: 30, step: 5 },
+  { id: "mini-hamburguer", cat: "buffet", name: "Mini hambúrguer gourmet", desc: "Pão de brioche, hambúrguer caseiro, cream cheese, presunto, mussarela, tomate e alface. Decorado com tomate cereja.", img: img("mini-hamburguer"), price: 5.5, min: 25, step: 5 },
+  { id: "mini-baguete", cat: "buffet", name: "Mini baguete frio", desc: "Pão baguete, cream cheese, peito de peru, mussarela, tomate e alface.", img: img("mini-baguete"), price: 2.9, min: 30, step: 5 },
+  { id: "mini-sanduiche", cat: "buffet", name: "Mini sanduíche frio de frango", desc: "Pão de forma com patê de frango. Decorado com tomate cereja.", img: img("mini-sanduiche"), price: 2.75, min: 30, step: 5 },
   {
     id: "bolo-cobertura", cat: "bolos", name: "Bolo caseiro com cobertura",
     desc: "Bolo caseiro, fofinho, com cobertura generosa.", img: img("bolo-chocolate"), price: 60, pick: 1,
