@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <>
       <section className="hero hero-logo-on">
-        <ParallaxBg src={photo("bolinhas")} overlay="linear-gradient(180deg,rgba(20,12,8,.25) 0%,rgba(20,12,8,.7) 55%,#140C08 100%)" amount={18} />
+        <ParallaxBg src={photo("hero-salgados")} overlay="linear-gradient(180deg,rgba(21,13,12,.1) 0%,rgba(21,13,12,.58) 50%,rgba(21,13,12,.9) 100%)" amount={10} zoom={false} className="hero-bg-food" />
         <Embers />
         <HeroLogo />
         <div className="hero-in">

@@ -270,6 +270,9 @@ input[type=date],input[type=time]{color-scheme:dark}
 
 .footer-admin{display:inline-block;margin-top:10px;font:400 12px/1 var(--font-body);letter-spacing:.08em;text-transform:none;color:var(--sds-crust-300);opacity:.7}
 .footer-admin:hover{opacity:1;color:var(--sds-gold-300)}
+/* hero photo: on a phone show the whole spread at the bottom instead of a tight crop */
+@media (max-width:720px){.hero-bg-food{background-size:270% auto!important;background-position:46% 100%!important;background-repeat:no-repeat!important;-webkit-mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 48%);mask-image:linear-gradient(180deg,transparent 0,transparent 18%,#000 48%)}}
+
 /* hero seal */
 .hero.hero-logo-on{flex-direction:column;align-items:stretch;justify-content:flex-end}
 .hero-logo-on .hero-in{padding-top:20px}

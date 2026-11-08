@@ -80,7 +80,7 @@ export function SplitWordsH2(props: { text: string; className?: string; style?: 
 }
 
 /** Background layer that drifts slower than the page (parallax) with an optional slow zoom. */
-export function ParallaxBg({ src, overlay, zoom = true, amount = 14, style }: { src: string; overlay?: string; zoom?: boolean; amount?: number; style?: CSSProperties }) {
+export function ParallaxBg({ src, overlay, zoom = true, amount = 14, style, className }: { src: string; overlay?: string; zoom?: boolean; amount?: number; style?: CSSProperties; className?: string }) {
   const wrap = useRef<HTMLDivElement>(null);
   const bg = useRef<HTMLDivElement>(null);
   useGSAP(() => {
@@ -93,7 +93,7 @@ export function ParallaxBg({ src, overlay, zoom = true, amount = 14, style }: { 
   }, { scope: wrap });
   return (
     <div ref={wrap} style={{ position: "absolute", inset: 0, overflow: "hidden", ...style }}>
-      <div ref={bg} style={{ position: "absolute", inset: "-10% 0", background: `url('${src}') center/cover`, willChange: "transform" }} />
+      <div ref={bg} className={className} style={{ position: "absolute", inset: "-10% 0", background: `url('${src}') center/cover`, willChange: "transform" }} />
       {overlay && <div style={{ position: "absolute", inset: 0, background: overlay }} />}
     </div>
   );
