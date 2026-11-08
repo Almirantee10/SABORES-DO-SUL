@@ -4,6 +4,7 @@ import { img, photo, MARQUEE } from "@/lib/data";
 import { Embers, Marquee, ParallaxBg, Reveal, SplitWords, SplitWordsH2, Stagger, Tilt } from "@/components/Motion";
 import { Badge, BagIcon, Button, PriceTag, SectionHeading } from "@/components/ui";
 import { HeroIntro } from "@/components/HeroIntro";
+import { HeroLogo } from "@/components/HeroLogo";
 
 const options = [
   { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: photo("bolinhas"), href: "/cardapio#fritos" },
@@ -20,9 +21,10 @@ const pillars = [
 export default function Home() {
   return (
     <>
-      <section className="hero">
+      <section className="hero hero-logo-on">
         <ParallaxBg src={photo("bolinhas")} overlay="linear-gradient(180deg,rgba(20,12,8,.25) 0%,rgba(20,12,8,.7) 55%,#140C08 100%)" amount={18} />
         <Embers />
+        <HeroLogo />
         <div className="hero-in">
           <HeroIntro />
           <SplitWords text="Seu lanche gostoso, sem complicação." delay={0.35} />

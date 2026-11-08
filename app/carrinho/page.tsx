@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Banknote, MapPin, MessageSquare, ShoppingBag, Trash2, User } from "lucide-react";
-import { PAY, fmt } from "@/lib/data";
+import { ArrowLeft, Banknote, Link2, LocateFixed, MapPin, MessageSquare, Phone, ShoppingBag, Trash2, User } from "lucide-react";
+import { PAY, fmt, formatPhone, validPhone } from "@/lib/data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { useCatalog } from "@/components/Catalog";
@@ -39,6 +39,7 @@ export default function Carrinho() {
 
   const missing = [
     !checkout.custName.trim() && "seu nome",
+    !validPhone(checkout.phone) && "o telefone com DDD",
     !checkout.date && "a data",
     !checkout.time && "o horário",
     !checkout.pay && "a forma de pagamento",
@@ -47,6 +48,20 @@ export default function Carrinho() {
   const send = () => { if (cantSend || !cart.length) return; setSent(buildMessage()); };
 
   const verb = checkout.delivery === "entrega" ? "entrega" : "retirada";
+
+  const [geo, setGeo] = useState<{ busy: boolean; err: string }>({ busy: false, err: "" });
+  const locate = () => {
+    if (!navigator.geolocation) return setGeo({ busy: false, err: "Este aparelho não consegue informar a localização." });
+    setGeo({ busy: true, err: "" });
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        setCheckout({ mapLink: `https://www.google.com/maps?q=${p.coords.latitude.toFixed(6)},${p.coords.longitude.toFixed(6)}` });
+        setGeo({ busy: false, err: "" });
+      },
+      (e) => setGeo({ busy: false, err: e.code === e.PERMISSION_DENIED ? "Permita o acesso à localização no navegador e tente de novo." : "Não foi possível pegar a localização. Cole o link do mapa." }),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  };
 
   return (
     <div className="cart" ref={root}>
@@ -91,13 +106,26 @@ export default function Carrinho() {
           <div className="checkout">
             <SectionHeading align="left">Finalizar</SectionHeading>
             <Field label="Seu nome (obrigatório)" required icon={<User size={18} />} placeholder="Nome de quem está fazendo o pedido" value={checkout.custName} onChange={(e) => setCheckout({ custName: e.target.value })} />
+            <Field label="Telefone / WhatsApp (obrigatório)" required type="tel" inputMode="tel" autoComplete="tel" icon={<Phone size={18} />} placeholder="(63) 99999-9999" value={checkout.phone} onChange={(e) => setCheckout({ phone: formatPhone(e.target.value) })} />
             <div className="grp">
               <span className="lbl">Recebimento</span>
               <OptionRow type="radio" checked={checkout.delivery === "retirada"} label="Retirada no local" description="Você busca no horário combinado" onChange={() => setCheckout({ delivery: "retirada" })} />
               <OptionRow type="radio" checked={checkout.delivery === "entrega"} label="Entrega" description="Levamos até você" onChange={() => setCheckout({ delivery: "entrega" })} />
             </div>
             {checkout.delivery === "entrega" && (
-              <Field label="Endereço de entrega (opcional)" icon={<MapPin size={18} />} placeholder="Rua, número, bairro, referência" value={checkout.address} onChange={(e) => setCheckout({ address: e.target.value })} />
+              <>
+                <Field label="Endereço de entrega (opcional)" icon={<MapPin size={18} />} placeholder="Rua, número, bairro, referência" value={checkout.address} onChange={(e) => setCheckout({ address: e.target.value })} />
+                <div className="grp">
+                  <Field label="Link da localização (opcional)" type="url" inputMode="url" icon={<Link2 size={18} />} placeholder="Cole o link do Google Maps" value={checkout.mapLink} onChange={(e) => setCheckout({ mapLink: e.target.value })} />
+                  <Button variant="outline" size="sm" full disabled={geo.busy} onClick={locate}><LocateFixed size={16} /> <span>{geo.busy ? "Buscando localização…" : "Usar minha localização atual"}</span></Button>
+                  {geo.err && <p className="warn" role="alert">{geo.err}</p>}
+                  {checkout.mapLink && (
+                    <p className="note" style={{ textAlign: "left" }}>
+                      Localização salva. <a href={checkout.mapLink} target="_blank" rel="noopener noreferrer">Ver no mapa</a> · enviada só com o pedido.
+                    </p>
+                  )}
+                </div>
+              </>
             )}
             <div className="grp">
               <span className="lbl">Data e horário da {verb} (obrigatório)</span>

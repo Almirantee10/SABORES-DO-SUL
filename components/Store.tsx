@@ -9,7 +9,7 @@ export type CartItem = {
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
 };
 export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string };
-export type Checkout = { custName: string; delivery: "retirada" | "entrega"; address: string; date: string; time: string; pay: string | null; troco: string; obsGeral: string };
+export type Checkout = { custName: string; phone: string; delivery: "retirada" | "entrega"; address: string; mapLink: string; date: string; time: string; pay: string | null; troco: string; obsGeral: string };
 
 type Ctx = {
   cart: CartItem[];
@@ -39,7 +39,7 @@ const StoreCtx = createContext<Ctx>(null as unknown as Ctx);
 export const useStore = () => useContext(StoreCtx);
 
 const LS = "sds-pedido-next-v1";
-const EMPTY: Checkout = { custName: "", delivery: "retirada", address: "", date: "", time: "", pay: null, troco: "", obsGeral: "" };
+const EMPTY: Checkout = { custName: "", phone: "", delivery: "retirada", address: "", mapLink: "", date: "", time: "", pay: null, troco: "", obsGeral: "" };
 
 export const burst = () => window.dispatchEvent(new CustomEvent("sds:burst"));
 
@@ -119,7 +119,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const buildMessage = useCallback(() => {
     const LINE = "────────────────────";
     const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰", bebidas: "🥤" };
-    const L = ["👤 *" + checkout.custName.trim() + "*", "", LINE];
+    const L = ["👤 *" + checkout.custName.trim() + "*", "📞 " + checkout.phone.trim(), "", LINE];
     cart.forEach((it) => {
       const cat = it.cat ?? byId[it.pid]?.cat ?? "";
       const base = it.name.replace(/^Salgados /, "");
@@ -133,7 +133,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     L.push("", LINE, "💰 *Total estimado:* " + fmt(total), LINE, "");
     if (checkout.delivery === "entrega") {
       L.push("🚚 *Recebimento:* Entrega");
-      L.push("📍 *Endereço / localização:* " + (checkout.address.trim() || "enviarei pelo WhatsApp"));
+      L.push("📍 *Endereço / localização:* " + (checkout.address.trim() || (checkout.mapLink.trim() ? "ver link abaixo" : "enviarei pelo WhatsApp")));
+      if (checkout.mapLink.trim()) L.push("🗺️ *Localização no mapa:* " + checkout.mapLink.trim());
     } else {
       L.push("🏪 *Recebimento:* Retirada no local");
     }
@@ -154,7 +155,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     clearCart: () => setCart([]),
     finishOrder: () => {
       setCart([]);
-      setCo((c) => ({ ...EMPTY, custName: c.custName }));
+      setCo((c) => ({ ...EMPTY, custName: c.custName, phone: c.phone }));
     },
     sheet, openSheet, patchSheet, closeSheet: () => setSheet(null), addToCart, addDirect,
     toast, showToast, sent, setSent, buildMessage,

@@ -128,6 +128,15 @@ export const waUrl = (text: string) => `https://wa.me/${WA}?text=${encodeURIComp
 export const unitOf = (p: Product) => (p.sizes ? "meio cento" : p.min ? "unidade" : "");
 export const priceOf = (p: Product) => (p.sizes ? (p.sizes[1] ?? p.sizes[0]).price : (p.price as number));
 
+/** Brazilian phone while typing: "63992202561" -> "(63) 99220-2561" */
+export const formatPhone = (v: string) => {
+  const d = v.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 2) return d;
+  const mid = d.length > 10 ? 7 : 6;
+  return `(${d.slice(0, 2)}) ${d.slice(2, mid)}${d.length > mid ? "-" + d.slice(mid) : ""}`;
+};
+export const validPhone = (v: string) => /^\d{10,11}$/.test(v.replace(/\D/g, ""));
+
 /** "06/11/2026" from the value of an <input type="date"> */
 export const fmtDate = (iso: string) => (iso ? iso.split("-").reverse().join("/") : "");
 export const maxFlavors = (p: Product, sizeId: string | null) => {
