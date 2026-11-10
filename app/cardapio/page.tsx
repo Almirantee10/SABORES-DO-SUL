@@ -1,23 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Copy } from "lucide-react";
-import { CATS, IG_URL, TAB_INFO, WA_LABEL } from "@/lib/data";
+import { CATS, TAB_INFO } from "@/lib/data";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
 import { PromoStrip } from "@/components/PromoStrip";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
-import { useStore } from "@/components/Store";
 import { CategoryTabs, InfoPill } from "@/components/ui";
 import { ProductInline } from "@/components/ProductInline";
 import { Reveal, Stagger } from "@/components/Motion";
-import { InstagramIcon, WhatsAppIcon } from "@/components/Brand";
 
 export default function Cardapio() {
-  const { showToast } = useStore();
   const { products } = useCatalog();
   const [tab, setTab] = useState(CATS[0].id);
-  const [copied, setCopied] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const lock = useRef(0);
 
@@ -31,13 +26,6 @@ export default function Cardapio() {
     if (noMotion() || !smooth) { window.scrollTo(0, top); return; }
     const o = { y: window.scrollY };
     gsap.to(o, { y: top, duration: 1.1, ease: "power3.inOut", overwrite: true, onUpdate: () => window.scrollTo(0, o.y) });
-  };
-
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(WA_LABEL); } catch {}
-    setCopied(true);
-    showToast("Número copiado!");
-    setTimeout(() => setCopied(false), 2000);
   };
 
   useGSAP(() => {
@@ -71,13 +59,6 @@ export default function Cardapio() {
         <h1 className="mh-title">Cardápio</h1>
         <ShopStatus />
         <div className="mh-rest">
-          <div className="mh-rule"><i /><span>◆</span><i /></div>
-          <div className="mh-sub">Salgados · Pães · Cucas · Palmas-TO</div>
-          <div className="mh-contact">
-            <span className="mh-wa"><WhatsAppIcon size={18} color="var(--sds-whatsapp)" /><small>WhatsApp</small><b>{WA_LABEL}</b></span>
-            <button type="button" className="btn btn-outline btn-sm" onClick={copy}>{copied ? <Check size={15} /> : <Copy size={15} />} <span>{copied ? "Copiado" : "Copiar número"}</span></button>
-            <a className="mh-ig" href={IG_URL} target="_blank" rel="noopener noreferrer"><InstagramIcon size={18} /> @saboresdosulpalmas</a>
-          </div>
           <p className="mh-hint">Escolha os sabores, toque em Adicionar, monte seu pedido e envie pelo WhatsApp.</p>
         </div>
       </section>

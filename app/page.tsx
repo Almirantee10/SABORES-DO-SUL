@@ -6,6 +6,7 @@ import { Badge, BagIcon, Button, PriceTag, SectionHeading } from "@/components/u
 import { HeroIntro } from "@/components/HeroIntro";
 import { HeroLogo } from "@/components/HeroLogo";
 import { PromoStrip } from "@/components/PromoStrip";
+import { ContactBand } from "@/components/ContactBand";
 
 const options = [
   { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: photo("bolinhas"), href: "/cardapio#fritos" },
@@ -88,6 +89,8 @@ export default function Home() {
           ))}
         </Stagger>
       </section>
+
+      <ContactBand />
 
       <section className="cta">
         <ParallaxBg src={img("pao-de-queijo-assado")} overlay="linear-gradient(180deg,rgba(20,12,8,.82),rgba(20,12,8,.93))" amount={20} zoom={false} />

@@ -215,6 +215,7 @@ main{flex:1}
 .mh-wa b{font:700 20px/1 var(--font-display);color:var(--sds-cream-50);letter-spacing:.02em}
 .mh-ig{display:inline-flex;align-items:center;gap:8px;color:var(--sds-cream-100);font:400 15px/1 var(--font-body);text-decoration:underline;text-decoration-color:rgba(224,182,80,.5);text-underline-offset:4px}
 .mh-ig:hover{color:var(--sds-gold-300)}
+.contact-band{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:44px 20px;background:linear-gradient(180deg,#271110,#150D0C);border-top:1px solid var(--border-subtle)}
 .mh-hint{font:400 15px/1.5 var(--font-body);color:var(--sds-cream-100);max-width:420px;opacity:.9}
 .tabsbar-bar{margin:0;padding:0;background:var(--surface-page);border-top:0;border-bottom:1px solid var(--border-subtle)}
 .tabs-underline{width:100%;max-width:var(--container);margin:0 auto;padding:0;border:0;border-radius:0;gap:0;justify-content:center}
@@ -255,7 +256,7 @@ main{flex:1}
   .pi-ring{width:76px;height:76px}
   .pi-size{padding:12px 14px}
   .pi-size b{font-size:22px}
-  .mh{padding:28px 16px 28px}
+  .mh{padding:24px 16px 22px;gap:10px}
   .mh-logo{width:92px;height:92px}
   .tabs-underline button{padding:16px 10px;letter-spacing:.08em;font-size:12px}
   .btn-lg{white-space:normal;text-align:center;line-height:1.2;height:auto;min-height:56px;padding-top:10px;padding-bottom:10px}
