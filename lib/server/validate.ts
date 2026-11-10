@@ -1,5 +1,6 @@
 import { CATS, type Product, type Size } from "@/lib/data";
 import type { StoreData } from "@/lib/store-data";
+import type { Promo } from "@/lib/promo";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const num = (v: unknown, min: number, max: number) => {
@@ -95,6 +96,33 @@ export function sanitizeStore(raw: unknown): { ok: true; data: StoreData } | { o
   }
   return {
     ok: true,
-    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, updatedAt: Date.now() },
+    // the promotions have their own screen and endpoint; the route keeps the saved ones
+    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, promos: [], updatedAt: Date.now() },
   };
+}
+
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+export function sanitizePromos(raw: unknown): { ok: true; promos: Promo[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw) || raw.length > 40) return { ok: false, error: "lista de promoções inválida" };
+  const used = new Set<string>();
+  const promos: Promo[] = [];
+  for (const item of raw) {
+    const r = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    const name = str(r.name, 60);
+    if (!name) return { ok: false, error: "toda promoção precisa de um nome" };
+    const percent = int(r.percent, 1, 90);
+    if (percent === null) return { ok: false, error: `desconto inválido em "${name}" (use de 1 a 90%)` };
+    const start = typeof r.start === "string" ? r.start : "";
+    const end = typeof r.end === "string" ? r.end : "";
+    if (!DATE.test(start) || !DATE.test(end) || start > end) return { ok: false, error: `datas inválidas em "${name}"` };
+    const productIds = Array.isArray(r.productIds) ? [...new Set(r.productIds.map((p) => slug(str(p, 40))).filter(Boolean))].slice(0, 150) : [];
+    if (!productIds.length) return { ok: false, error: `escolha ao menos um produto em "${name}"` };
+    let id = slug(str(r.id, 40)) || slug(name) || "promo";
+    const base = id;
+    for (let i = 2; used.has(id); i++) id = `${base}-${i}`.slice(0, 40);
+    used.add(id);
+    promos.push({ id, name, desc: str(r.desc, 160), percent, productIds, start, end, active: r.active !== false });
+  }
+  return { ok: true, promos };
 }

@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { fmt, maxFlavors, type Product } from "@/lib/data";
+import { promoPrice } from "@/lib/promo";
 import { gsap, noMotion } from "@/lib/gsap";
 import { useStore } from "./Store";
 import { useCatalog } from "./Catalog";
@@ -11,7 +12,8 @@ import { Badge, Field, OptionRow, QuantityStepper, Thumb } from "./ui";
 /** A product with every choice (size, flavors, quantity) open on the card. */
 export function ProductInline({ p }: { p: Product }) {
   const { addDirect } = useStore();
-  const { open: shopOpen, ready } = useCatalog();
+  const { open: shopOpen, ready, promoPct } = useCatalog();
+  const pct = promoPct(p.id);
   const [size, setSize] = useState<string | null>(p.sizes ? p.sizes[0].id : null);
   const [flavors, setFlavors] = useState<string[]>([]);
   const [qty, setQty] = useState(p.min || 1);
@@ -20,7 +22,7 @@ export function ProductInline({ p }: { p: Product }) {
 
   // the menu can change while this card is on screen (price, sizes, flavors)
   const z = p.sizes?.find((x) => x.id === size) || p.sizes?.[0] || null;
-  const unit = (z ? z.price : p.price) as number;
+  const unit = promoPrice((z ? z.price : p.price) as number, pct);
   const max = maxFlavors(p, z ? z.id : null);
   const single = p.pick === 1;
   const min = z ? 1 : p.min || 1;
@@ -53,7 +55,7 @@ export function ProductInline({ p }: { p: Product }) {
     <article className={`pi${p.soldOut ? " is-soldout" : ""}`}>
       <header className="pi-head">
         <div className="pi-txt">
-          <h3>{p.name}{p.badge ? <Badge>{p.badge}</Badge> : null}{p.soldOut ? <span className="soldout-tag">Esgotado</span> : null}</h3>
+          <h3>{p.name}{p.badge ? <Badge>{p.badge}</Badge> : null}{pct && !p.soldOut ? <span className="promo-tag">-{pct}%</span> : null}{p.soldOut ? <span className="soldout-tag">Esgotado</span> : null}</h3>
           <p>{p.desc}</p>
         </div>
         <Thumb src={p.img} icon={44} className="pi-ring" />
@@ -64,7 +66,7 @@ export function ProductInline({ p }: { p: Product }) {
           {p.sizes.map((s) => (
             <button key={s.id} type="button" role="radio" aria-checked={z?.id === s.id} className={`pi-size${z?.id === s.id ? " on" : ""}`} onClick={() => pickSize(s.id)}>
               <small>{s.label}</small>
-              <b>{fmt(s.price)}</b>
+              <b>{pct ? <><s>{fmt(s.price)}</s> {fmt(promoPrice(s.price, pct))}</> : fmt(s.price)}</b>
               <em>{s.sub.replace(/ · .*/, "")}</em>
             </button>
           ))}

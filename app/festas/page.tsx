@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RATIO, fmt, img, photo, priceOf } from "@/lib/data";
 import { useStore } from "@/components/Store";
 import { useCatalog } from "@/components/Catalog";
+import { promoPrice } from "@/lib/promo";
 import { Embers, CountUp, ParallaxBg, Reveal, SplitWords, Stagger } from "@/components/Motion";
 import { HeroIntro } from "@/components/HeroIntro";
 import { BagIcon, Button, CategoryTabs, InfoPill, PriceTag, SectionHeading, Thumb } from "@/components/ui";
@@ -18,7 +19,7 @@ const eventTypes = [{ id: "aniversario", label: "Festa" }, { id: "reuniao", labe
 
 export default function Festas() {
   const { openSheet } = useStore();
-  const { products, byId, open: shopOpen } = useCatalog();
+  const { products, byId, open: shopOpen, promoPct } = useCatalog();
   const [guests, setGuests] = useState(40);
   const [type, setType] = useState("aniversario");
 
@@ -27,7 +28,7 @@ export default function Festas() {
   const centos = Math.floor(total / 100);
   const meio = total % 100 ? 1 : 0;
   const fritos = byId["fritos"]?.sizes;
-  const price = centos * (fritos?.[0]?.price ?? 70) + meio * (fritos?.[1]?.price ?? 35);
+  const price = centos * promoPrice(fritos?.[0]?.price ?? 70, promoPct("fritos")) + meio * promoPrice(fritos?.[1]?.price ?? 35, promoPct("fritos"));
   const text = [centos ? centos + (centos > 1 ? " centos" : " cento") : "", meio ? "meio cento" : ""].filter(Boolean).join(" + ");
   const buffet = products.filter((p) => p.cat === "buffet");
 
@@ -87,7 +88,8 @@ export default function Festas() {
             <div className="bcard" key={b.id}>
               <Thumb src={b.img} size={150} icon={56} />
               <h3>{b.name}</h3>
-              <PriceTag value={priceOf(b)} unit="unidade" />
+              <PriceTag value={promoPrice(priceOf(b), promoPct(b.id))} unit="unidade" />
+              {promoPct(b.id) > 0 && <span className="promo-tag">-{promoPct(b.id)}% · de {fmt(priceOf(b))}</span>}
               {b.min && b.min > 1 ? <InfoPill label="Pedido mínimo" value={`${b.min} unidades`} /> : null}
               <Button variant="outline" size="sm" disabled={!!b.soldOut || !shopOpen} onClick={() => openSheet(b.id)}>
                 {b.soldOut ? <span>Esgotado</span> : !shopOpen ? <span>Fechado</span> : <><Plus size={16} /> <span>Adicionar</span></>}

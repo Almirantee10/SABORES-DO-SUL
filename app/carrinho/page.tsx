@@ -8,6 +8,7 @@ import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
+import { recordOrder } from "@/lib/orders-client";
 import { WhatsAppIcon } from "@/components/Brand";
 import { Button, Field, OptionRow, PriceTag, QuantityStepper, SectionHeading, Thumb } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Motion";
@@ -45,7 +46,11 @@ export default function Carrinho() {
     !checkout.pay && "a forma de pagamento",
   ].filter(Boolean) as string[];
   const cantSend = missing.length > 0 || !shopOpen;
-  const send = () => { if (cantSend || !cart.length) return; setSent(buildMessage()); };
+  const send = () => {
+    if (cantSend || !cart.length) return;
+    setSent(buildMessage());
+    void recordOrder(cart, checkout);
+  };
 
   const verb = checkout.delivery === "entrega" ? "entrega" : "retirada";
 
@@ -88,7 +93,10 @@ export default function Carrinho() {
                   <Thumb src={it.img} size={64} icon={28} className="citem-ring" />
                   <div className="citem-info">
                     <b>{it.name}</b>
-                    <small>{it.sizeLabel ? `${it.sizeLabel} · ${fmt(it.price)} cada` : `${fmt(it.price)} por unidade`}</small>
+                    <small>
+                      {it.sizeLabel ? `${it.sizeLabel} · ${fmt(it.price)} cada` : `${fmt(it.price)} por unidade`}
+                      {it.pct ? <span className="promo-tag">-{it.pct}%{it.origPrice ? ` · de ${fmt(it.origPrice)}` : ""}</span> : null}
+                    </small>
                     {it.flavors.map((f) => <span className="fl" key={f}>- {f}</span>)}
                   </div>
                   <button className="iconbtn iconbtn-ghost" aria-label="Remover" onClick={() => remove(it.uid)}><Trash2 size={18} /></button>

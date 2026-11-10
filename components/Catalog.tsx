@@ -2,10 +2,16 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/lib/data";
+import { percentFor, promoState, todayStr, type Promo } from "@/lib/promo";
 import { defaultStore, type StoreData } from "@/lib/store-data";
 
 type Ctx = {
   products: Product[];
+  promos: Promo[];
+  /** promotions running today */
+  activePromos: Promo[];
+  /** running discount for a product, in percent (0 = none) */
+  promoPct: (pid: string) => number;
   byId: Record<string, Product>;
   open: boolean;
   closedMessage: string;
@@ -21,6 +27,7 @@ export const useCatalog = () => useContext(CatalogCtx);
 export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const [data, setData] = useState<StoreData>(defaultStore);
   const [ready, setReady] = useState(false);
+  const [today, setToday] = useState("");
   const last = useRef(0);
 
   const refresh = useCallback(async () => {
@@ -34,6 +41,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // keep the menu shipped with the site
     } finally {
+      setToday(todayStr()); // the customer's own calendar decides which promotions are running
       setReady(true);
     }
   }, []);
@@ -55,6 +63,9 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<Ctx>(
     () => ({
       products: data.products,
+      promos: data.promos ?? [],
+      activePromos: (data.promos ?? []).filter((p) => promoState(p, today) === "ativa"),
+      promoPct: (pid: string) => percentFor(data.promos ?? [], pid, today),
       byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
       open: data.open !== false,
       closedMessage: data.closedMessage || "",
@@ -62,7 +73,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       refresh,
       apply: (d) => setData((cur) => ({ ...cur, ...d })),
     }),
-    [data, ready, refresh],
+    [data, ready, refresh, today],
   );
 
   return <CatalogCtx.Provider value={value}>{children}</CatalogCtx.Provider>;

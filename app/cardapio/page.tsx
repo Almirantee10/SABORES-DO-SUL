@@ -5,6 +5,7 @@ import { Check, Copy } from "lucide-react";
 import { CATS, IG_URL, TAB_INFO, WA_LABEL } from "@/lib/data";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
+import { PromoStrip } from "@/components/PromoStrip";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { CategoryTabs, InfoPill } from "@/components/ui";
@@ -80,6 +81,8 @@ export default function Cardapio() {
           <p className="mh-hint">Escolha os sabores, toque em Adicionar, monte seu pedido e envie pelo WhatsApp.</p>
         </div>
       </section>
+
+      <PromoStrip link={false} />
 
       <div className="tabsbar tabsbar-bar">
         <CategoryTabs variant="bar" items={CATS} value={tab} onChange={(id) => scrollTo(id)} />

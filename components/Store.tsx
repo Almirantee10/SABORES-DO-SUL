@@ -2,10 +2,13 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { PAY, fmt, fmtDate } from "@/lib/data";
+import { promoPrice } from "@/lib/promo";
 import { useCatalog } from "./Catalog";
 
 export type CartItem = {
   uid: string; pid: string; cat?: string; name: string; img: string; sizeLabel: string;
+  /** promotion applied when the item was added: discount in percent and the price before it */
+  pct?: number; origPrice?: number;
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
 };
 export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string };
@@ -51,7 +54,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sent, setSent] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const tt = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { byId, open: shopOpen } = useCatalog();
+  const { byId, open: shopOpen, promoPct } = useCatalog();
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restoring the saved cart after hydration */
@@ -99,14 +102,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
       pid: p.id, cat: p.cat, name: p.name, img: p.img,
       sizeLabel: z ? (z.id === "porcao" || z.id === "pacote" ? `${z.label} de ${z.sub.replace(" unidades", " un.")}` : z.label) : "",
-      price: (z ? z.price : p.price) as number, qty: s.qty,
+      price: promoPrice((z ? z.price : p.price) as number, promoPct(p.id)), pct: promoPct(p.id) || undefined,
+      origPrice: promoPct(p.id) ? ((z ? z.price : p.price) as number) : undefined, qty: s.qty,
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
       flavors: s.flavors.slice(), obs: s.obs || "",
     };
     setCart((c) => c.concat([item]));
     burst();
     showToast(p.name + " adicionado ao pedido!");
-  }, [showToast, byId, shopOpen]);
+  }, [showToast, byId, shopOpen, promoPct]);
 
   const addToCart = useCallback(() => {
     if (!sheet) return;
@@ -127,7 +131,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const icon = it.pid.startsWith("pq-") ? "🧀" : ICON[cat] ?? "🍴";
       L.push("", `${icon} *${title}${it.sizeLabel ? " · " + it.sizeLabel : ""}*`);
       it.flavors.forEach((f) => L.push("   • " + f));
-      L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}`);
+      L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}${it.pct ? ` (promoção -${it.pct}%)` : ""}`);
       if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
     });
     L.push("", LINE, "💰 *Total estimado:* " + fmt(total), LINE, "");

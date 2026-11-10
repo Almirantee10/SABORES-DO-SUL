@@ -21,6 +21,7 @@ export async function PUT(req: Request) {
     const current = await readStore();
     res.data.open = current.open;
     res.data.closedMessage = current.closedMessage;
+    res.data.promos = current.promos;
     await writeStore(res.data);
   } catch {
     return Response.json({ error: "Não foi possível salvar. Tente de novo." }, { status: 500 });

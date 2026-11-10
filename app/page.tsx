@@ -5,6 +5,7 @@ import { Embers, Marquee, ParallaxBg, Reveal, SplitWords, SplitWordsH2, Stagger,
 import { Badge, BagIcon, Button, PriceTag, SectionHeading } from "@/components/ui";
 import { HeroIntro } from "@/components/HeroIntro";
 import { HeroLogo } from "@/components/HeroLogo";
+import { PromoStrip } from "@/components/PromoStrip";
 
 const options = [
   { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: photo("bolinhas"), href: "/cardapio#fritos" },
@@ -36,6 +37,8 @@ export default function Home() {
         </div>
         <span className="scrollcue" aria-hidden />
       </section>
+
+      <PromoStrip />
 
       <Marquee items={MARQUEE} />
 

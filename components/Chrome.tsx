@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Copy, Plus, X } from "lucide-react";
 import { PAGES, fmt, maxFlavors, waUrl, WA_LABEL } from "@/lib/data";
+import { promoPrice } from "@/lib/promo";
 import { useCatalog } from "./Catalog";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "./Store";
@@ -77,10 +78,10 @@ export function Footer() {
         <div className="footer-nav">
           {PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
         </div>
-        <div className="footer-tag">
-          Qualidade e sabor<br />que fazem a diferença!
-          <div><Link href="/admin" className="footer-admin">Área restrita</Link></div>
-        </div>
+        <div className="footer-tag">Qualidade e sabor<br />que fazem a diferença!</div>
+      </div>
+      <div className="footer-end">
+        <Link href="/admin" className="footer-admin-btn">Área restrita</Link>
       </div>
     </footer>
   );
@@ -184,12 +185,12 @@ function BottomSheet({ title, onClose, children, footer }: { title: string; onCl
 /* ----------------------------------------------------------- ProductSheet */
 export function ProductSheet() {
   const { sheet, patchSheet, closeSheet, addToCart } = useStore();
-  const { byId } = useCatalog();
+  const { byId, promoPct } = useCatalog();
   if (!sheet) return null;
   const p = byId[sheet.pid];
   if (!p) return null;
   const z = p.sizes?.find((x) => x.id === sheet.size) || null;
-  const unitPrice = (z ? z.price : p.price) as number;
+  const unitPrice = promoPrice((z ? z.price : p.price) as number, promoPct(p.id));
   const max = maxFlavors(p, sheet.size);
   const chosen = sheet.flavors;
   const single = p.pick === 1;
