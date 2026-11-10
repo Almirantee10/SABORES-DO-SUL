@@ -22,6 +22,7 @@ const PERIODS = [
   { id: "30", label: "30 dias" },
   { id: "mes", label: "Este mês" },
   { id: "tudo", label: "Tudo" },
+  { id: "custom", label: "Personalizado" },
 ] as const;
 
 const dayBack = (n: number) => {
@@ -64,15 +65,35 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
     return () => clearInterval(t);
   }, [load]);
 
+  const [cFrom, setCFrom] = useState("");
+  const [cTo, setCTo] = useState("");
+
   const [from, to] = useMemo(() => {
     const today = todayStr();
+    if (period === "custom") {
+      const a = cFrom || cTo || today;
+      const b = cTo || cFrom || today;
+      return a <= b ? [a, b] : [b, a]; // inverted dates are swapped, not rejected
+    }
     if (period === "hoje") return [today, today];
     if (period === "7") return [dayBack(6), today];
     if (period === "30") return [dayBack(29), today];
     if (period === "mes") return [today.slice(0, 8) + "01", today];
     const first = (orders ?? []).reduce((m, o) => (orderDay(o.createdAt) < m ? orderDay(o.createdAt) : m), today);
     return [first, today];
-  }, [period, orders]);
+  }, [period, orders, cFrom, cTo]);
+
+  // editing a date switches to "Personalizado", starting from the range being shown
+  const pickFrom = (v: string) => {
+    if (period !== "custom") setCTo(to);
+    setCFrom(v);
+    setPeriod("custom");
+  };
+  const pickTo = (v: string) => {
+    if (period !== "custom") setCFrom(from);
+    setCTo(v);
+    setPeriod("custom");
+  };
 
   const inPeriod = useMemo(() => (orders ?? []).filter((o) => orderDay(o.createdAt) >= from && orderDay(o.createdAt) <= to), [orders, from, to]);
 
@@ -132,6 +153,8 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
           <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)} aria-label="Período">
             {PERIODS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
           </select>
+          <label className="crm-date"><span>De</span><input type="date" value={from} max={todayStr()} onChange={(e) => e.target.value && pickFrom(e.target.value)} /></label>
+          <label className="crm-date"><span>Até</span><input type="date" value={to} max={todayStr()} onChange={(e) => e.target.value && pickTo(e.target.value)} /></label>
           <button className="btn btn-ghost btn-sm" onClick={load} disabled={busy} aria-label="Atualizar"><RefreshCw size={15} className={busy ? "spin" : ""} /> <span>Atualizar</span></button>
         </div>
       </div>
