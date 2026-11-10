@@ -460,6 +460,9 @@ input[type=date],input[type=time]{color-scheme:dark}
 .adm-top h1{margin:0}
 @media (max-width:560px){.adm-areas button span{font-size:12px}.tbl button{grid-template-columns:1fr 70px 100px}.tbl button span:nth-child(3){display:none}.search input{min-width:140px}}
 
+.adm-card.export{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;border-color:var(--border-gold)}
+.adm-card.export h2{margin-bottom:4px}
+
 /* festas */
 .occ{background:var(--surface-card);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:border-color .3s,transform .4s var(--ease-out)}
 .occ:hover{border-color:var(--border-gold-strong);transform:translateY(-6px)}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react";
+import { Download, FileSpreadsheet, FileText, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react";
+import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
 import { todayStr } from "@/lib/promo";
@@ -75,6 +76,23 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
 
   const inPeriod = useMemo(() => (orders ?? []).filter((o) => orderDay(o.createdAt) >= from && orderDay(o.createdAt) <= to), [orders, from, to]);
 
+  const [exporting, setExporting] = useState(false);
+  const exportExcel = async () => {
+    setExporting(true);
+    setErr("");
+    try {
+      await downloadXlsx(inPeriod, from, to);
+    } catch {
+      setErr("Não foi possível gerar o Excel. Tente de novo.");
+    } finally {
+      setExporting(false);
+    }
+  };
+  const exportPdf = () => {
+    if (!printReport(inPeriod, from, to)) setErr("O navegador bloqueou a janela do PDF. Permita pop-ups para este site e tente de novo.");
+    else setErr("");
+  };
+
   const setStatus = async (id: string, status: OrderStatus) => {
     const before = orders;
     setOrders((cur) => (cur ? cur.map((o) => (o.id === id ? { ...o, status } : o)) : cur));
@@ -120,6 +138,21 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
       <p className="adm-note">{period === "tudo" ? "Todo o histórico" : `${fmtDate(from)} até ${fmtDate(to)}`} · {inPeriod.length} pedido(s) no período</p>
       {err && <p className="adm-err" role="alert">{err}</p>}
       {orders === null ? <p className="adm-note">Carregando pedidos…</p> : null}
+
+      {orders !== null && (
+        <section className="adm-card export" aria-label="Exportar relatório">
+          <div>
+            <h2>Exportar relatório</h2>
+            <p className="adm-note">Leva o período escolhido acima: resumo, vendas por dia, pedidos, clientes e itens.</p>
+          </div>
+          <div className="crm-actions">
+            <button className="btn btn-primary btn-sm" disabled={exporting || inPeriod.length === 0} onClick={exportExcel}><FileSpreadsheet size={16} /> <span>{exporting ? "Gerando…" : "Excel (.xlsx)"}</span></button>
+            <button className="btn btn-outline btn-sm" disabled={inPeriod.length === 0} onClick={exportPdf}><FileText size={16} /> <span>PDF</span></button>
+            <button className="btn btn-ghost btn-sm" disabled={inPeriod.length === 0} onClick={() => downloadCsv("pedidos", CSV.pedidos(inPeriod))}><Download size={16} /> <span>CSV</span></button>
+          </div>
+          {inPeriod.length === 0 && <p className="adm-note">Sem pedidos no período escolhido.</p>}
+        </section>
+      )}
 
       {orders !== null && view === "resumo" && <Resumo orders={inPeriod} from={from} to={to} s={s} />}
       {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} />}
