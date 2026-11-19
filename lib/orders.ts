@@ -56,6 +56,9 @@ const digits = (s: string) => s.replace(/\D/g, "");
 /** cancelled orders do not count as sales */
 export const counts = (o: Order) => o.status !== "cancelado";
 
+/** A customer is the phone; orders without a phone are grouped by name. */
+export const custKey =(o: Order) => digits(o.phone) || "nome:" + o.name.trim().toLowerCase();
+
 export function summary(orders: Order[]) {
   const live = orders.filter(counts);
   const revenue = live.reduce((a, o) => a + o.total, 0);
@@ -63,7 +66,7 @@ export function summary(orders: Order[]) {
     orders: live.length,
     revenue,
     ticket: live.length ? revenue / live.length : 0,
-    customers: new Set(live.map((o) => digits(o.phone))).size,
+    customers: new Set(live.map(custKey)).size,
     units: live.reduce((a, o) => a + o.items.reduce((b, i) => b + i.qty, 0), 0),
     cancelled: orders.length - live.length,
   };
@@ -104,7 +107,7 @@ export function byItem(orders: Order[]): ItemStat[] {
 export type CustomerStat = { key: string; name: string; phone: string; orders: number; total: number; ticket: number; first: string; last: string; items: ItemStat[] };
 export function byCustomer(orders: Order[]): CustomerStat[] {
   const m = new Map<string, Order[]>();
-  for (const o of orders.filter(counts)) m.set(digits(o.phone), [...(m.get(digits(o.phone)) ?? []), o]);
+  for (const o of orders.filter(counts)) m.set(custKey(o), [...(m.get(custKey(o)) ?? []), o]);
   return [...m.entries()]
     .map(([key, list]) => {
       const sorted = [...list].sort((a, b) => a.createdAt.localeCompare(b.createdAt));

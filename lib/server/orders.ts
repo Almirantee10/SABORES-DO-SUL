@@ -131,7 +131,8 @@ export function sanitizeOrder(raw: unknown): { ok: true; order: NewOrder } | { o
   const r = raw as Record<string, unknown>;
   const name = text(r.name, 80);
   const phone = text(r.phone, 20);
-  if (!name || !/^\d{10,11}$/.test(phone.replace(/\D/g, ""))) return { ok: false, error: "nome ou telefone inválido" };
+  const pd = phone.replace(/\D/g, "");
+  if (!name || (pd && !/^\d{10,11}$/.test(pd))) return { ok: false, error: "nome ou telefone inválido" }; // phone is optional
   if (!Array.isArray(r.items) || !r.items.length || r.items.length > 60) return { ok: false, error: "itens inválidos" };
 
   const items: OrderItem[] = [];

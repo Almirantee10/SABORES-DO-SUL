@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Banknote, Link2, LocateFixed, MapPin, MessageSquare, Phone, ShoppingBag, Trash2, User } from "lucide-react";
+import { ArrowLeft, Banknote, BookUser, Link2, LocateFixed, MapPin, MessageSquare, Phone, ShoppingBag, Trash2, User } from "lucide-react";
 import { PAY, fmt, formatPhone, validPhone } from "@/lib/data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
@@ -40,7 +40,7 @@ export default function Carrinho() {
 
   const missing = [
     !checkout.custName.trim() && "seu nome",
-    !validPhone(checkout.phone) && "o telefone com DDD",
+    checkout.phone.trim() && !validPhone(checkout.phone) && "o telefone completo com DDD (ou deixe em branco)",
     !checkout.date && "a data",
     !checkout.time && "o horário",
     !checkout.pay && "a forma de pagamento",
@@ -53,6 +53,24 @@ export default function Carrinho() {
   };
 
   const verb = checkout.delivery === "entrega" ? "entrega" : "retirada";
+
+  // Contact Picker API: Android Chrome only (iPhone has no equivalent), so the button shows only where it works
+  type Picker = { select: (props: string[], opts?: { multiple?: boolean }) => Promise<{ name?: string[]; tel?: string[] }[]> };
+  const [canPickContact, setCanPick] = useState(false);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- feature check needs the browser
+    setCanPick("contacts" in navigator && "ContactsManager" in window);
+  }, []);
+  const pickContact = async () => {
+    try {
+      const [c] = await (navigator as unknown as { contacts: Picker }).contacts.select(["name", "tel"], { multiple: false });
+      if (!c) return;
+      const tel = c.tel?.[0] ? formatPhone(c.tel[0].replace(/^\+?55/, "")) : "";
+      setCheckout({ ...(tel ? { phone: tel } : {}), ...(!checkout.custName.trim() && c.name?.[0] ? { custName: c.name[0] } : {}) });
+    } catch {
+      // closed without choosing
+    }
+  };
 
   const [geo, setGeo] = useState<{ busy: boolean; err: string }>({ busy: false, err: "" });
   const locate = () => {
@@ -114,7 +132,8 @@ export default function Carrinho() {
           <div className="checkout">
             <SectionHeading align="left">Finalizar</SectionHeading>
             <Field label="Seu nome (obrigatório)" required icon={<User size={18} />} placeholder="Nome de quem está fazendo o pedido" value={checkout.custName} onChange={(e) => setCheckout({ custName: e.target.value })} />
-            <Field label="Telefone / WhatsApp (obrigatório)" required type="tel" inputMode="tel" autoComplete="tel" icon={<Phone size={18} />} placeholder="(63) 99999-9999" value={checkout.phone} onChange={(e) => setCheckout({ phone: formatPhone(e.target.value) })} />
+            <Field label="Telefone / WhatsApp (opcional)" type="tel" inputMode="tel" autoComplete="tel" icon={<Phone size={18} />} placeholder="(63) 99999-9999" value={checkout.phone} onChange={(e) => setCheckout({ phone: formatPhone(e.target.value) })} />
+            {canPickContact && <button type="button" className="btn btn-ghost btn-sm" onClick={pickContact}><BookUser size={16} /> <span>Escolher da agenda</span></button>}
             <div className="grp">
               <span className="lbl">Recebimento</span>
               <OptionRow type="radio" checked={checkout.delivery === "retirada"} label="Retirada no local" description="Você busca no horário combinado" onChange={() => setCheckout({ delivery: "retirada" })} />

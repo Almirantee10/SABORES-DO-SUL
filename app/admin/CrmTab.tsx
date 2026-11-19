@@ -6,7 +6,7 @@ import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
 import { todayStr } from "@/lib/promo";
-import { STATUS, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
+import { STATUS, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
 import { BarChart, Donut, HBars } from "./charts";
 
 type View = "resumo" | "pedidos" | "clientes" | "itens";
@@ -253,7 +253,7 @@ function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string,
           </header>
           <div className="ord-who">
             <b>{o.name}</b>
-            <a href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={14} /> {o.phone}</a>
+            {o.phone ? <a href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={14} /> {o.phone}</a> : <small>sem telefone</small>}
           </div>
           <p className="ord-when">{o.delivery === "entrega" ? "Entrega" : "Retirada"} em {fmtDate(o.date)} às {o.time} · {payLabel(o.pay)}{o.troco ? ` (troco ${o.troco})` : ""}</p>
           {(o.address || o.mapLink) && (
@@ -285,7 +285,7 @@ function Clientes({ orders }: { orders: Order[] }) {
       </div>
       <p className="adm-note">{list.length} cliente(s). Toque em um cliente para ver o histórico.</p>
       {list.map((c) => {
-        const mine = orders.filter((o) => digits(o.phone) === c.key).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        const mine = orders.filter((o) => custKey(o) === c.key).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
         return (
           <section key={c.key} className={`cust${open === c.key ? " open" : ""}`}>
             <button className="cust-head" onClick={() => setOpen(open === c.key ? null : c.key)} aria-expanded={open === c.key}>

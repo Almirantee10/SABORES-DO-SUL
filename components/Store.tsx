@@ -123,7 +123,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const buildMessage = useCallback(() => {
     const LINE = "────────────────────";
     const ICON: Record<string, string> = { fritos: "🍤", assados: "🥐", buffet: "🍔", bolos: "🍰", bebidas: "🥤" };
-    const L = ["👤 *" + checkout.custName.trim() + "*", "📞 " + checkout.phone.trim(), "", LINE];
+    const L = ["👤 *" + checkout.custName.trim() + "*"];
+    if (checkout.phone.trim()) L.push("📞 " + checkout.phone.trim());
+    L.push("", LINE);
     cart.forEach((it) => {
       const cat = it.cat ?? byId[it.pid]?.cat ?? "";
       const base = it.name.replace(/^Salgados /, "");
@@ -135,19 +137,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
     });
     L.push("", LINE, "💰 *Total estimado:* " + fmt(total), LINE, "");
+    // each field is its own paragraph (blank line between them)
+    const F: string[] = [];
     if (checkout.delivery === "entrega") {
-      L.push("🚚 *Recebimento:* Entrega");
-      L.push("📍 *Endereço / localização:* " + (checkout.address.trim() || (checkout.mapLink.trim() ? "ver link abaixo" : "enviarei pelo WhatsApp")));
-      if (checkout.mapLink.trim()) L.push("🗺️ *Localização no mapa:* " + checkout.mapLink.trim());
+      F.push("🚚 *Recebimento:* Entrega");
+      F.push("📍 *Endereço / localização:* " + (checkout.address.trim() || (checkout.mapLink.trim() ? "ver link abaixo" : "enviarei pelo WhatsApp")));
+      if (checkout.mapLink.trim()) F.push("🗺️ *Localização no mapa:* " + checkout.mapLink.trim());
     } else {
-      L.push("🏪 *Recebimento:* Retirada no local");
+      F.push("🏪 *Recebimento:* Retirada no local");
     }
-    L.push(`🗓️ *${checkout.delivery === "entrega" ? "Data da entrega" : "Data da retirada"}:* ${fmtDate(checkout.date)}`);
-    L.push(`⏰ *${checkout.delivery === "entrega" ? "Horário da entrega" : "Horário da retirada"}:* ${checkout.time}`);
+    F.push(`🗓️ *${checkout.delivery === "entrega" ? "Data da entrega" : "Data da retirada"}:* ${fmtDate(checkout.date)}`);
+    F.push(`⏰ *${checkout.delivery === "entrega" ? "Horário da entrega" : "Horário da retirada"}:* ${checkout.time}`);
     const pay = PAY.find((x) => x.id === checkout.pay);
-    L.push("💳 *Pagamento:* " + (pay ? pay.label : "-") + (checkout.pay === "dinheiro" && checkout.troco.trim() ? ` (troco para ${checkout.troco.trim()})` : ""));
-    if (checkout.obsGeral.trim()) L.push("📝 *Observações:* " + checkout.obsGeral.trim());
-    L.push("", "Aguardo a confirmação do valor final. Obrigado! 🙏");
+    F.push("💳 *Pagamento:* " + (pay ? pay.label : "-") + (checkout.pay === "dinheiro" && checkout.troco.trim() ? ` (troco para ${checkout.troco.trim()})` : ""));
+    if (checkout.obsGeral.trim()) F.push("📝 *Observações:* " + checkout.obsGeral.trim());
+    L.push(F.join("\n\n"), "", "Aguardo a confirmação do valor final. Obrigado! 🙏");
     return L.join("\n");
   }, [cart, checkout, total, byId]);
 
