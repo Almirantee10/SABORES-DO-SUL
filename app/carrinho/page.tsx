@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Banknote, BookUser, Link2, LocateFixed, MapPin, MessageSquare, Phone, ShoppingBag, Trash2, User } from "lucide-react";
 import { PAY, fmt, formatPhone, validPhone } from "@/lib/data";
+import { defaultSettings } from "@/lib/store-data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { useCatalog } from "@/components/Catalog";
@@ -14,9 +15,19 @@ import { Button, Field, OptionRow, PriceTag, QuantityStepper, SectionHeading, Th
 import { CountUp, Reveal } from "@/components/Motion";
 
 export default function Carrinho() {
-  const { cart, total, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated } = useStore();
+  const { cart, fee, grand, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated } = useStore();
   const root = useRef<HTMLDivElement>(null);
-  const { open: shopOpen } = useCatalog();
+  const { open: shopOpen, settings } = useCatalog();
+  const payOptions = PAY.filter((p) => settings.pay.includes(p.id));
+
+  // only one way of receiving may be on: select it
+  useEffect(() => {
+    if (!hydrated) return;
+    if (checkout.delivery === "entrega" && !settings.deliveryOn && settings.pickupOn) setCheckout({ delivery: "retirada" });
+    if (checkout.delivery === "retirada" && !settings.pickupOn && settings.deliveryOn) setCheckout({ delivery: "entrega" });
+    if (checkout.pay && !settings.pay.includes(checkout.pay)) setCheckout({ pay: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated, settings.deliveryOn, settings.pickupOn, settings.pay]);
 
   // earliest date the customer can pick; read in the browser so the page can still be prerendered
   const [today, setToday] = useState("");
@@ -136,8 +147,8 @@ export default function Carrinho() {
             {canPickContact && <button type="button" className="btn btn-ghost btn-sm" onClick={pickContact}><BookUser size={16} /> <span>Escolher da agenda</span></button>}
             <div className="grp">
               <span className="lbl">Recebimento</span>
-              <OptionRow type="radio" checked={checkout.delivery === "retirada"} label="Retirada no local" description="Você busca no horário combinado" onChange={() => setCheckout({ delivery: "retirada" })} />
-              <OptionRow type="radio" checked={checkout.delivery === "entrega"} label="Entrega" description="Levamos até você" onChange={() => setCheckout({ delivery: "entrega" })} />
+              {settings.pickupOn && <OptionRow type="radio" checked={checkout.delivery === "retirada"} label="Retirada no local" description="Você busca no horário combinado" onChange={() => setCheckout({ delivery: "retirada" })} />}
+              {settings.deliveryOn && <OptionRow type="radio" checked={checkout.delivery === "entrega"} label="Entrega" description={settings.deliveryFee > 0 ? `Levamos até você · taxa ${fmt(settings.deliveryFee)}` : "Levamos até você"} onChange={() => setCheckout({ delivery: "entrega" })} />}
             </div>
             {checkout.delivery === "entrega" && (
               <>
@@ -163,17 +174,18 @@ export default function Carrinho() {
             </div>
             <div className="grp">
               <span className="lbl">Forma de pagamento</span>
-              {PAY.map((o) => <OptionRow key={o.id} type="radio" checked={checkout.pay === o.id} label={o.label} onChange={() => setCheckout({ pay: o.id })} />)}
+              {payOptions.map((o) => <OptionRow key={o.id} type="radio" checked={checkout.pay === o.id} label={o.label} onChange={() => setCheckout({ pay: o.id })} />)}
             </div>
             {checkout.pay === "dinheiro" && (
               <Field label="Troco para (opcional)" icon={<Banknote size={18} />} placeholder="Ex.: R$ 200,00" value={checkout.troco} onChange={(e) => setCheckout({ troco: e.target.value })} />
             )}
             <Field label="Observações do pedido (opcional)" multiline placeholder="Recados para a cozinha..." value={checkout.obsGeral} onChange={(e) => setCheckout({ obsGeral: e.target.value })} />
+            {fee > 0 && <div className="total-row" style={{ fontSize: 15 }}><span>Taxa de entrega</span><span>{fmt(fee)}</span></div>}
             <div className="total-row">
               <span>Total</span>
-              <CountUp value={total} format={fmt} className="price price-lg" />
+              <CountUp value={grand} format={fmt} className="price price-lg" />
             </div>
-            <p className="note" style={{ textAlign: "left", marginTop: -10 }}>Taxa de entrega, se houver, é combinada pelo WhatsApp.</p>
+            {settings.deliveryNote && checkout.delivery === "entrega" && !(fee > 0 && settings.deliveryNote === defaultSettings().deliveryNote) && <p className="note" style={{ textAlign: "left", marginTop: -10 }}>{settings.deliveryNote}</p>}
             <Button variant="whatsapp" size="lg" full disabled={cantSend} onClick={send}><WhatsAppIcon size={22} /> <span>Enviar pedido pelo WhatsApp</span></Button>
             {!shopOpen && <p className="warn" style={{ marginTop: -10 }}>Estamos fechados no momento. O envio de pedidos está pausado.</p>}
             {shopOpen && cantSend && <p className="warn" style={{ marginTop: -10 }}>Para enviar, preencha: {missing.join(", ")}.</p>}

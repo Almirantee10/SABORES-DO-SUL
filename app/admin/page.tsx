@@ -1,13 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BarChart3, Lock, LogOut, Tag, UtensilsCrossed } from "lucide-react";
+import { BarChart3, KeyRound, LayoutList, Lock, LogOut, Store, Tag, UtensilsCrossed } from "lucide-react";
 import { api, ApiError } from "@/lib/admin-client";
+import { AccessTab } from "./AccessTab";
+import { CatsTab } from "./CatsTab";
 import { CrmTab } from "./CrmTab";
+import { LojaTab } from "./LojaTab";
 import { MenuTab } from "./MenuTab";
 import { PromoTab } from "./PromoTab";
 
-type Session = { configured: boolean; authenticated: boolean };
+type Session = { configured: boolean; authenticated: boolean; user?: string };
 
 export default function Admin() {
   const [sess, setSess] = useState<Session | null>(null);
@@ -37,7 +40,7 @@ export default function Admin() {
       </div>
     );
   if (!sess.authenticated) return <Login onDone={load} />;
-  return <Shell onSignedOut={load} />;
+  return <Shell user={sess.user ?? ""} onSignedOut={load} />;
 }
 
 /* ------------------------------------------------------------------ login */
@@ -77,16 +80,19 @@ function Login({ onDone }: { onDone: () => void }) {
   );
 }
 
-/* ------------------------------------------------------- the three areas */
+/* ------------------------------------------------------------- the areas */
 const AREAS = [
+  { id: "crm", label: "Pedidos e CRM", Icon: BarChart3 },
   { id: "cardapio", label: "Cardápio", Icon: UtensilsCrossed },
-  { id: "crm", label: "CRM", Icon: BarChart3 },
+  { id: "categorias", label: "Categorias", Icon: LayoutList },
   { id: "promocoes", label: "Promoções", Icon: Tag },
+  { id: "loja", label: "Loja", Icon: Store },
+  { id: "acesso", label: "Acesso", Icon: KeyRound },
 ] as const;
 type Area = (typeof AREAS)[number]["id"];
 
-function Shell({ onSignedOut }: { onSignedOut: () => void }) {
-  const [area, setArea] = useState<Area>("cardapio");
+function Shell({ user, onSignedOut }: { user: string; onSignedOut: () => void }) {
+  const [area, setArea] = useState<Area>("crm");
 
   const signOut = async () => {
     try { await api("/api/admin/logout", "POST", {}); } catch {}
@@ -108,9 +114,12 @@ function Shell({ onSignedOut }: { onSignedOut: () => void }) {
         ))}
       </nav>
 
-      {area === "cardapio" && <MenuTab onSignedOut={onSignedOut} />}
       {area === "crm" && <CrmTab onSignedOut={onSignedOut} />}
+      {area === "cardapio" && <MenuTab onSignedOut={onSignedOut} />}
+      {area === "categorias" && <CatsTab onSignedOut={onSignedOut} />}
       {area === "promocoes" && <PromoTab onSignedOut={onSignedOut} />}
+      {area === "loja" && <LojaTab onSignedOut={onSignedOut} />}
+      {area === "acesso" && <AccessTab user={user} onChanged={() => void 0} onSignedOut={onSignedOut} />}
     </div>
   );
 }

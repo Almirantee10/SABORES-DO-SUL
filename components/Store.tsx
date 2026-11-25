@@ -17,6 +17,10 @@ export type Checkout = { custName: string; phone: string; delivery: "retirada" |
 type Ctx = {
   cart: CartItem[];
   total: number;
+  /** delivery fee for the chosen way of receiving (0 for pickup or when free) */
+  fee: number;
+  /** items + fee */
+  grand: number;
   checkout: Checkout;
   setCheckout: (p: Partial<Checkout>) => void;
   patchItem: (uid: string, p: Partial<CartItem>) => void;
@@ -54,7 +58,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [sent, setSent] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const tt = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { byId, open: shopOpen, promoPct } = useCatalog();
+  const { byId, open: shopOpen, promoPct, settings } = useCatalog();
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restoring the saved cart after hydration */
@@ -119,6 +123,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [sheet, addDirect]);
 
   const total = useMemo(() => cart.reduce((a, it) => a + it.qty * it.price, 0), [cart]);
+  const fee = checkout.delivery === "entrega" ? settings.deliveryFee : 0;
+  const grand = total + fee;
 
   const buildMessage = useCallback(() => {
     const LINE = "────────────────────";
@@ -136,7 +142,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}${it.pct ? ` (promoção -${it.pct}%)` : ""}`);
       if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
     });
-    L.push("", LINE, "💰 *Total estimado:* " + fmt(total), LINE, "");
+    if (fee > 0) L.push("", "🚚 Taxa de entrega: " + fmt(fee));
+    L.push("", LINE, "💰 *Total estimado:* " + fmt(grand), LINE, "");
     // each field is its own paragraph (blank line between them)
     const F: string[] = [];
     if (checkout.delivery === "entrega") {
@@ -153,10 +160,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (checkout.obsGeral.trim()) F.push("📝 *Observações:* " + checkout.obsGeral.trim());
     L.push(F.join("\n\n"), "", "Aguardo a confirmação do valor final. Obrigado! 🙏");
     return L.join("\n");
-  }, [cart, checkout, total, byId]);
+  }, [cart, checkout, fee, grand, byId]);
 
   const value: Ctx = {
-    cart, total, checkout, hydrated,
+    cart, total, fee, grand, checkout, hydrated,
     setCheckout: (p) => setCo((c) => ({ ...c, ...p })),
     patchItem: (uid, p) => setCart((c) => c.map((it) => (it.uid === uid ? { ...it, ...p } : it))),
     removeItem: (uid) => setCart((c) => c.filter((x) => x.uid !== uid)),

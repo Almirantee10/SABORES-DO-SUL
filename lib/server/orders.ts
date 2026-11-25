@@ -2,7 +2,7 @@ import { get, put } from "@vercel/blob";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { PAY } from "@/lib/data";
+import type { Settings } from "@/lib/store-data";
 import { STATUS, type Order, type OrderItem, type OrderStatus } from "@/lib/orders";
 
 /*
@@ -14,14 +14,14 @@ import { STATUS, type Order, type OrderItem, type OrderStatus } from "@/lib/orde
 export const ordersConfigured = () => (process.env.ORDERS_KEY ?? "").length >= 16;
 const key = () => createHash("sha256").update("sds-orders|" + process.env.ORDERS_KEY).digest();
 
-function seal(text: string) {
+export function seal(text: string) {
   const iv = randomBytes(12);
   const c = createCipheriv("aes-256-gcm", key(), iv);
   const ct = Buffer.concat([c.update(text, "utf8"), c.final()]);
   return ["v1", iv.toString("base64url"), c.getAuthTag().toString("base64url"), ct.toString("base64url")].join(".");
 }
 
-function unseal(blob: string) {
+export function unseal(blob: string) {
   const [v, iv, tag, ct] = blob.trim().split(".");
   if (v !== "v1" || !iv || !tag || !ct) throw new Error("formato de pedidos desconhecido");
   const d = createDecipheriv("aes-256-gcm", key(), Buffer.from(iv, "base64url"));
@@ -126,7 +126,7 @@ const num = (v: unknown, min: number, max: number) => {
 };
 
 /** The order comes from the customer's browser: check every field and rebuild the total from the lines. */
-export function sanitizeOrder(raw: unknown): { ok: true; order: NewOrder } | { ok: false; error: string } {
+export function sanitizeOrder(raw: unknown, settings: Settings): { ok: true; order: NewOrder } | { ok: false; error: string } {
   if (!raw || typeof raw !== "object") return { ok: false, error: "pedido inválido" };
   const r = raw as Record<string, unknown>;
   const name = text(r.name, 80);
@@ -161,12 +161,15 @@ export function sanitizeOrder(raw: unknown): { ok: true; order: NewOrder } | { o
   const mapLink = text(r.mapLink, 300);
   if (mapLink && !/^https:\/\//.test(mapLink)) return { ok: false, error: "link do mapa inválido" };
   const pay = text(r.pay, 20);
-  if (!PAY.some((p) => p.id === pay)) return { ok: false, error: "pagamento inválido" };
+  if (!settings.pay.includes(pay)) return { ok: false, error: "pagamento inválido" };
+  const delivery = r.delivery === "entrega" ? "entrega" : "retirada";
+  if (delivery === "entrega" ? !settings.deliveryOn : !settings.pickupOn) return { ok: false, error: "forma de recebimento indisponível" };
 
-  const total = Math.round(items.reduce((a, i) => a + i.qty * i.price, 0) * 100) / 100;
+  const fee = delivery === "entrega" ? settings.deliveryFee : 0;
+  const total = Math.round((items.reduce((a, i) => a + i.qty * i.price, 0) + fee) * 100) / 100;
   const order: NewOrder = {
-    name, phone,
-    delivery: r.delivery === "entrega" ? "entrega" : "retirada",
+    name, phone, fee,
+    delivery,
     address: text(r.address, 200), mapLink, date, time, pay,
     troco: text(r.troco, 30), notes: text(r.notes, 300), items, total,
   };

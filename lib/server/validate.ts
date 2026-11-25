@@ -1,5 +1,5 @@
-import { CATS, type Product, type Size } from "@/lib/data";
-import type { StoreData } from "@/lib/store-data";
+import { PAY, type Product, type Size } from "@/lib/data";
+import { defaultSettings, type Cat, type Settings, type StoreData } from "@/lib/store-data";
 import type { Promo } from "@/lib/promo";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -36,13 +36,13 @@ function size(raw: unknown): Size | null {
   return { id, label, sub: str(r.sub, 60), price, ...(max ? { max } : {}) };
 }
 
-function product(raw: unknown, used: Set<string>): Product | string {
+function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product | string {
   if (!raw || typeof raw !== "object") return "produto inválido";
   const r = raw as Record<string, unknown>;
   const name = str(r.name, 80);
   if (!name) return "todo produto precisa de nome";
   const cat = str(r.cat, 20);
-  if (!CATS.some((c) => c.id === cat)) return `categoria inválida em "${name}"`;
+  if (!catIds.has(cat)) return `categoria inválida em "${name}"`;
 
   let id = slug(str(r.id, 40)) || slug(name) || "produto";
   const base = id;
@@ -83,21 +83,22 @@ function product(raw: unknown, used: Set<string>): Product | string {
 }
 
 /** Returns the cleaned data, or a message in Portuguese saying what is wrong. */
-export function sanitizeStore(raw: unknown): { ok: true; data: StoreData } | { ok: false; error: string } {
+export function sanitizeStore(raw: unknown, catIds: string[]): { ok: true; data: StoreData } | { ok: false; error: string } {
   if (!raw || typeof raw !== "object") return { ok: false, error: "dados inválidos" };
   const r = raw as Record<string, unknown>;
   if (!Array.isArray(r.products) || r.products.length > 150) return { ok: false, error: "lista de produtos inválida" };
   const used = new Set<string>();
+  const ids = new Set(catIds);
   const products: Product[] = [];
   for (const p of r.products) {
-    const res = product(p, used);
+    const res = product(p, used, ids);
     if (typeof res === "string") return { ok: false, error: res };
     products.push(res);
   }
   return {
     ok: true,
     // the promotions have their own screen and endpoint; the route keeps the saved ones
-    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, promos: [], updatedAt: Date.now() },
+    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, promos: [], cats: [], settings: defaultSettings(), updatedAt: Date.now() },
   };
 }
 
@@ -125,4 +126,77 @@ export function sanitizePromos(raw: unknown): { ok: true; promos: Promo[] } | { 
     promos.push({ id, name, desc: str(r.desc, 160), percent, productIds, start, end, active: r.active !== false });
   }
   return { ok: true, promos };
+}
+
+/* ------------------------------------------------------- categories & settings */
+
+const flag = (v: unknown, fallback: boolean) => (typeof v === "boolean" ? v : fallback);
+
+/** Categories: each needs a name; an old category that still holds products cannot be removed. */
+export function sanitizeCats(raw: unknown, products: Product[]): { ok: true; cats: Cat[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw) || !raw.length || raw.length > 20) return { ok: false, error: "tenha de 1 a 20 categorias" };
+  const used = new Set<string>();
+  const cats: Cat[] = [];
+  for (const item of raw) {
+    const r = (item && typeof item === "object" ? item : {}) as Record<string, unknown>;
+    const title = str(r.title, 40);
+    if (!title) return { ok: false, error: "toda categoria precisa de um nome" };
+    const label = str(r.label, 24) || title.slice(0, 24);
+    let id = slug(str(r.id, 20)) || slug(title).slice(0, 20) || "categoria";
+    const base = id;
+    for (let i = 2; used.has(id); i++) id = `${base}-${i}`.slice(0, 20);
+    used.add(id);
+    const info = (Array.isArray(r.info) ? r.info : [])
+      .slice(0, 4)
+      .map((x) => {
+        const o = (x && typeof x === "object" ? x : {}) as Record<string, unknown>;
+        return { label: str(o.label, 24), value: str(o.value, 40) };
+      })
+      .filter((x) => x.label && x.value);
+    cats.push({ id, label, title, info });
+  }
+  const missing = products.find((p) => !used.has(p.cat));
+  if (missing) return { ok: false, error: `a categoria de "${missing.name}" foi removida; mova ou exclua os produtos dela antes` };
+  return { ok: true, cats };
+}
+
+export function sanitizeSettings(raw: unknown): { ok: true; settings: Settings } | { ok: false; error: string } {
+  const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const d = defaultSettings();
+
+  let wa = str(r.whatsapp, 30).replace(/\D/g, "");
+  if (/^\d{10,11}$/.test(wa)) wa = "55" + wa;
+  if (!/^55\d{10,11}$/.test(wa)) return { ok: false, error: "WhatsApp inválido. Use o DDD e o número, ex.: 63 99220-2561" };
+
+  const ig = str(r.instagram, 80).replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "");
+  if (!/^[\w.]{0,30}$/.test(ig)) return { ok: false, error: "Instagram inválido. Use só o nome de usuário." };
+
+  const fee = num(r.deliveryFee, 0, 999);
+  if (fee === null) return { ok: false, error: "taxa de entrega inválida" };
+
+  const pickupOn = flag(r.pickupOn, true);
+  const deliveryOn = flag(r.deliveryOn, true);
+  if (!pickupOn && !deliveryOn) return { ok: false, error: "deixe retirada ou entrega ativada" };
+
+  const pay = (Array.isArray(r.pay) ? r.pay : []).filter((p): p is string => typeof p === "string" && PAY.some((x) => x.id === p));
+  if (!pay.length) return { ok: false, error: "deixe ao menos uma forma de pagamento ativada" };
+
+  const text = (k: keyof Settings, max: number) => str(r[k], max) || (k === "hours" || k === "deliveryNote" ? "" : (d[k] as string));
+  return {
+    ok: true,
+    settings: {
+      whatsapp: wa,
+      instagram: ig,
+      tagline: text("tagline", 80),
+      description: text("description", 300),
+      hours: text("hours", 200),
+      pickupOn, deliveryOn, deliveryFee: fee,
+      deliveryNote: text("deliveryNote", 160),
+      pay: PAY.filter((p) => pay.includes(p.id)).map((p) => p.id),
+      menuHint: text("menuHint", 200),
+      menuNote: text("menuNote", 200),
+      ctaTitle: text("ctaTitle", 80),
+      ctaText: text("ctaText", 200),
+    },
+  };
 }

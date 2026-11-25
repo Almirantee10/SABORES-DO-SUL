@@ -125,7 +125,12 @@ export const MARQUEE = ["Coxinha de frango", "Quibe", "Palitinho de queijo", "Es
 export const fmt = (v: number) =>
   "R$ " + Number(v).toFixed(2).replace(".", ",").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-export const waUrl = (text: string) => `https://wa.me/${WA}?text=${encodeURIComponent(text)}`;
+export const waUrl = (text: string, wa = WA) => `https://wa.me/${wa}?text=${encodeURIComponent(text)}`;
+/** "5563992202561" -> "63 99220-2561" */
+export const waLabel = (wa: string) => {
+  const d = wa.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
+  return d.length >= 10 ? `${d.slice(0, 2)} ${d.slice(2, d.length - 4)}-${d.slice(-4)}` : wa;
+};
 
 export const unitOf = (p: Product) => (p.sizes ? "meio cento" : p.min ? "unidade" : "");
 export const priceOf = (p: Product) => (p.sizes ? (p.sizes[1] ?? p.sizes[0]).price : (p.price as number));

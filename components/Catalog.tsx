@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/lib/data";
 import { percentFor, promoState, todayStr, type Promo } from "@/lib/promo";
-import { defaultStore, type StoreData } from "@/lib/store-data";
+import { defaultStore, type Cat, type Settings, type StoreData } from "@/lib/store-data";
 
 type Ctx = {
   products: Product[];
@@ -15,6 +15,8 @@ type Ctx = {
   byId: Record<string, Product>;
   open: boolean;
   closedMessage: string;
+  cats: Cat[];
+  settings: Settings;
   /** false until the live menu arrived (or failed), so nobody orders at an out-of-date price */
   ready: boolean;
   refresh: () => Promise<void>;
@@ -36,7 +38,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       const res = await fetch("/api/store", { cache: "no-store" });
       if (res.ok) {
         const d = (await res.json()) as StoreData;
-        if (Array.isArray(d.products)) setData(d);
+        if (Array.isArray(d.products)) setData({ ...defaultStore(), ...d, settings: { ...defaultStore().settings, ...(d.settings ?? {}) } });
       }
     } catch {
       // keep the menu shipped with the site
@@ -69,6 +71,8 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
       open: data.open !== false,
       closedMessage: data.closedMessage || "",
+      cats: data.cats,
+      settings: data.settings,
       ready,
       refresh,
       apply: (d) => setData((cur) => ({ ...cur, ...d })),

@@ -1,10 +1,10 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import { CATS, fmt, type Product } from "@/lib/data";
+import { ChevronDown, ChevronUp, Copy, ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { fmt, type Product } from "@/lib/data";
 import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-client";
-import type { StoreData } from "@/lib/store-data";
+import type { Cat, StoreData } from "@/lib/store-data";
 import { useCatalog } from "@/components/Catalog";
 import { Thumb } from "@/components/ui";
 const newProduct = (cat: string): Product => ({ id: "novo-" + Date.now().toString(36), cat, name: "", desc: "", img: "", price: 0 });
@@ -16,8 +16,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
   const [editing, setEditing] = useState<Product | null>(null);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
-  const [closedMsg, setClosedMsg] = useState(catalog.closedMessage);
-  const [statusBusy, setStatusBusy] = useState(false);
+  const [cats, setCats] = useState<Cat[]>(catalog.cats);
 
   // always edit the latest saved menu, not a possibly stale copy
   useEffect(() => {
@@ -28,7 +27,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
         if (!live) return;
         setDraft(d.products);
         setSavedJson(JSON.stringify(d.products));
-        setClosedMsg(d.closedMessage || "");
+        if (Array.isArray(d.cats) && d.cats.length) setCats(d.cats);
       } catch {
         if (live) setMsg({ ok: false, text: "Não foi possível carregar o cardápio. Atualize a página." });
       }
@@ -69,42 +68,34 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
     }
   };
 
-  const setOpen = async (open: boolean) => {
-    setStatusBusy(true);
-    setMsg(null);
-    try {
-      const d = await api<{ open: boolean; closedMessage: string }>("/api/admin/status", "PUT", { open, closedMessage: closedMsg });
-      catalog.apply({ open: d.open, closedMessage: d.closedMessage });
-      setMsg({ ok: true, text: d.open ? "Loja ABERTA. Os pedidos estão liberados." : "Loja FECHADA. Os pedidos estão pausados." });
-    } catch (e) {
-      if (!expired(e)) setMsg({ ok: false, text: e instanceof Error ? e.message : "Não foi possível alterar." });
-    } finally {
-      setStatusBusy(false);
-    }
-  };
-
   const patch = (id: string, fn: (p: Product) => Product) => setDraft((d) => (d ? d.map((p) => (p.id === id ? fn(p) : p)) : d));
-  const byCat = useMemo(() => CATS.map((c) => ({ ...c, items: (draft ?? []).filter((p) => p.cat === c.id) })), [draft]);
+  /** moves a product up or down inside its category */
+  const move = (id: string, dir: -1 | 1) =>
+    setDraft((d) => {
+      if (!d) return d;
+      const i = d.findIndex((p) => p.id === id);
+      let j = i + dir;
+      while (j >= 0 && j < d.length && d[j].cat !== d[i].cat) j += dir;
+      if (j < 0 || j >= d.length) return d;
+      const n = d.slice();
+      [n[i], n[j]] = [n[j], n[i]];
+      return n;
+    });
+  const duplicate = (id: string) =>
+    setDraft((d) => {
+      if (!d) return d;
+      const i = d.findIndex((p) => p.id === id);
+      const src = d[i];
+      const copy: Product = { ...JSON.parse(JSON.stringify(src)), id: "novo-" + Date.now().toString(36), name: src.name + " (cópia)" };
+      return [...d.slice(0, i + 1), copy, ...d.slice(i + 1)];
+    });
+  const byCat = useMemo(() => cats.map((c) => ({ ...c, items: (draft ?? []).filter((p) => p.cat === c.id) })), [draft, cats]);
 
   return (
     <div className="adm-pane">
-      <p className="adm-note">Mude valores, marque esgotados, adicione produtos e abra ou feche a loja.</p>
+      <p className="adm-note">Mude valores, marque esgotados, duplique, reordene e adicione produtos. Para abrir ou fechar a loja, use a aba Loja.</p>
 
       {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
-
-      <section className="adm-card">
-        <h2>Loja</h2>
-        <div className="adm-seg" role="group" aria-label="Situação da loja">
-          <button className={catalog.open ? "on open" : ""} disabled={statusBusy} onClick={() => setOpen(true)}>● Aberta</button>
-          <button className={!catalog.open ? "on closed" : ""} disabled={statusBusy} onClick={() => setOpen(false)}>● Fechada</button>
-        </div>
-        <label className="adm-f">
-          <span>Aviso quando estiver fechada (opcional)</span>
-          <input value={closedMsg} maxLength={200} placeholder="Ex.: Voltamos amanhã às 8h." onChange={(e) => setClosedMsg(e.target.value)} />
-        </label>
-        <button className="btn btn-outline btn-sm" disabled={statusBusy} onClick={() => setOpen(catalog.open)}>Salvar aviso</button>
-        <p className="adm-note">Fechada: o cardápio continua visível, mas ninguém consegue adicionar itens nem enviar pedido.</p>
-      </section>
 
       {!draft ? (
         <p className="adm-note">Carregando cardápio…</p>
@@ -116,7 +107,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
               <button className="btn btn-outline btn-sm" onClick={() => setEditing(newProduct(c.id))}><Plus size={16} /> <span>Adicionar produto</span></button>
             </div>
             {c.items.length === 0 && <p className="adm-note">Nenhum produto nesta categoria.</p>}
-            {c.items.map((p) => (
+            {c.items.map((p, idx) => (
               <div key={p.id} className={`adm-row${p.soldOut ? " off" : ""}`}>
                 <Thumb src={p.img} size={56} icon={24} />
                 <div className="adm-info">
@@ -138,6 +129,9 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                   </div>
                 </div>
                 <div className="adm-actions">
+                  <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={idx === 0} onClick={() => move(p.id, -1)}><ChevronUp size={18} /></button>
+                  <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={idx === c.items.length - 1} onClick={() => move(p.id, 1)}><ChevronDown size={18} /></button>
+                  <button className="iconbtn iconbtn-ghost" aria-label={`Duplicar ${p.name}`} title="Duplicar" onClick={() => duplicate(p.id)}><Copy size={16} /></button>
                   <label className="adm-switch">
                     <input type="checkbox" checked={!!p.soldOut} onChange={(e) => patch(p.id, (x) => ({ ...x, soldOut: e.target.checked }))} />
                     <span>Esgotado</span>
@@ -161,6 +155,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
       {editing && (
         <ProductModal
           product={editing}
+          cats={cats}
           isNew={!draft?.some((p) => p.id === editing.id)}
           onClose={() => setEditing(null)}
           onApply={(p) => {
@@ -205,7 +200,7 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 /* ------------------------------------------------------------ product form */
-function ProductModal({ product, isNew, onClose, onApply, onDelete }: { product: Product; isNew: boolean; onClose: () => void; onApply: (p: Product) => void; onDelete: (id: string) => void }) {
+function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { product: Product; cats: Cat[]; isNew: boolean; onClose: () => void; onApply: (p: Product) => void; onDelete: (id: string) => void }) {
   const [f, setF] = useState<Product>(product);
   const [flavorsText, setFlavorsText] = useState((product.flavors ?? []).join("\n"));
   const [err, setErr] = useState("");
@@ -273,7 +268,7 @@ function ProductModal({ product, isNew, onClose, onApply, onDelete }: { product:
           <label className="adm-f">
             <span>Categoria</span>
             <select value={f.cat} onChange={(e) => setF({ ...f, cat: e.target.value })}>
-              {CATS.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+              {cats.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
             </select>
           </label>
 

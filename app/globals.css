@@ -1,4 +1,4 @@
-﻿:root{
+:root{
 --sds-black:#0D0806;--sds-espresso-900:#150D0C;--sds-espresso-800:#211413;--sds-espresso-700:#2A1A12;--sds-espresso-600:#3B2619;
 --sds-bordo-900:#271110;--sds-bordo-800:#311312;--sds-bordo-700:#4E1E17;
 --sds-gold-300:#F3DC93;--sds-gold-400:#E8C468;--sds-gold-500:#E0B650;--sds-gold-600:#BF9437;--sds-gold-700:#8F6B22;
@@ -377,7 +377,7 @@ input[type=date],input[type=time]{color-scheme:dark}
 /* admin: areas, CRM, promotions */
 .adm{max-width:1040px}
 .adm-pane{display:flex;flex-direction:column;gap:18px}
-.adm-areas{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:sticky;top:var(--hh);z-index:12;padding:8px 0;background:var(--surface-page)}
+.adm-areas{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;position:sticky;top:var(--hh);z-index:12;padding:8px 0;background:var(--surface-page)}
 .adm-areas button{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 8px;border-radius:12px;border:1px solid rgba(245,235,221,.14);background:var(--surface-card);color:var(--sds-cream-100);font:700 14px/1 var(--font-label);letter-spacing:.06em;text-transform:uppercase;cursor:pointer;transition:all .25s}
 .adm-areas button.on{background:var(--sds-gold-foil);color:var(--text-on-gold);border-color:var(--sds-gold-600)}
 .adm-grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:18px}

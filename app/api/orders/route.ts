@@ -1,5 +1,6 @@
 import { clientIp, sameOrigin } from "@/lib/server/auth";
 import { addOrder, ordersConfigured, sanitizeOrder } from "@/lib/server/orders";
+import { readStore } from "@/lib/server/storage";
 
 /* a customer sends a handful of orders a day at most */
 const seen = new Map<string, number[]>();
@@ -26,10 +27,10 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "dados inválidos" }, { status: 400 });
   }
-  const res = sanitizeOrder(body);
-  if (!res.ok) return Response.json({ error: res.error }, { status: 400 });
-
   try {
+    const { settings } = await readStore();
+    const res = sanitizeOrder(body, settings);
+    if (!res.ok) return Response.json({ error: res.error }, { status: 400 });
     return Response.json({ id: await addOrder(res.order) });
   } catch {
     return Response.json({ error: "não foi possível registrar" }, { status: 500 });

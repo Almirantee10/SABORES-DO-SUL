@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus, Save, Tag, Trash2, X } from "lucide-react";
-import { CATS, fmt, fmtDate, priceOf, type Product } from "@/lib/data";
+import { fmt, fmtDate, priceOf, type Product } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
 import { promoPrice, promoState, todayStr, type Promo, type PromoState } from "@/lib/promo";
 import type { StoreData } from "@/lib/store-data";
@@ -112,6 +112,7 @@ export function PromoTab({ onSignedOut }: { onSignedOut: () => void }) {
         <PromoModal
           promo={edit}
           products={products}
+          cats={catalog.cats}
           isNew={!promos?.some((p) => p.id === edit.id)}
           onClose={() => setEdit(null)}
           onApply={(p) => {
@@ -128,7 +129,7 @@ export function PromoTab({ onSignedOut }: { onSignedOut: () => void }) {
   );
 }
 
-function PromoModal({ promo, products, isNew, onClose, onApply, onDelete }: { promo: Promo; products: Product[]; isNew: boolean; onClose: () => void; onApply: (p: Promo) => void; onDelete: (id: string) => void }) {
+function PromoModal({ promo, products, cats, isNew, onClose, onApply, onDelete }: { promo: Promo; products: Product[]; cats: { id: string; title: string; label: string }[]; isNew: boolean; onClose: () => void; onApply: (p: Promo) => void; onDelete: (id: string) => void }) {
   const [f, setF] = useState<Promo>(promo);
   const [err, setErr] = useState("");
 
@@ -175,7 +176,7 @@ function PromoModal({ promo, products, isNew, onClose, onApply, onDelete }: { pr
 
           <div className="adm-f">
             <span>Produtos da promoção ({f.productIds.length})</span>
-            {CATS.map((c) => {
+            {cats.map((c) => {
               const items = products.filter((p) => p.cat === c.id);
               if (!items.length) return null;
               const ids = items.map((p) => p.id);

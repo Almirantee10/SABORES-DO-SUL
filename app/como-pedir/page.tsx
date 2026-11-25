@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import { CalendarCheck, ChevronDown, ListChecks, MapPin, MessageCircle } from "lucide-react";
-import { IG_URL, WA_LABEL } from "@/lib/data";
+import { PAY, waLabel } from "@/lib/data";
+import { useCatalog } from "@/components/Catalog";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { Reveal, SplitWords, Stagger } from "@/components/Motion";
 import { Button, SectionHeading } from "@/components/ui";
@@ -18,11 +19,15 @@ const faq = [
   { q: "Quantos sabores posso escolher?", a: "Fritos: até 5 sabores no cento e 4 no meio cento. Assados: até 4 sabores no cento e 2 no meio cento." },
   { q: "Com quanto tempo de antecedência devo encomendar?", a: "Tudo é feito sob encomenda. Quanto antes você pedir, melhor garantimos a sua data. Para festas de última hora, chame no WhatsApp e consulte a disponibilidade." },
   { q: "Vocês entregam?", a: "Você escolhe retirada ou entrega ao finalizar o pedido. O endereço é opcional e a taxa, se houver, é combinada pelo WhatsApp." },
-  { q: "Quais são as formas de pagamento?", a: "Pix, cartão de crédito, cartão de débito ou dinheiro. Você escolhe ao finalizar o pedido." },
+  { q: "Quais são as formas de pagamento?", a: "" },
 ];
 
 export default function ComoPedir() {
   const [open, setOpen] = useState(0);
+  const { settings } = useCatalog();
+  const WA_LABEL = waLabel(settings.whatsapp);
+  const IG_URL = `https://www.instagram.com/${settings.instagram}/`;
+  const payText = PAY.filter((p) => settings.pay.includes(p.id)).map((p) => p.label.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " ou $1");
   const root = useRef<HTMLDivElement>(null);
   const { contextSafe } = useGSAP({ scope: root });
 
@@ -69,7 +74,7 @@ export default function ComoPedir() {
               <button type="button" className="faq-q" aria-expanded={open === i} onClick={() => toggle(i)}>
                 <span>{f.q}</span><ChevronDown size={20} />
               </button>
-              <div className="faq-a" style={{ height: i === 0 ? "auto" : 0 }}><p>{f.a}</p></div>
+              <div className="faq-a" style={{ height: i === 0 ? "auto" : 0 }}><p>{f.a || `Aceitamos ${payText}. Você escolhe ao finalizar o pedido.`}</p></div>
             </div>
           ))}
         </Stagger>

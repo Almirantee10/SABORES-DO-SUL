@@ -1,5 +1,6 @@
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
+import { checkPassword, effectiveUser, overrideKey } from "@/lib/server/credentials";
 
 const COOKIE = "sds_admin";
 const MAX_AGE = 60 * 60 * 8; // 8 hours
@@ -10,14 +11,14 @@ const digest = (s: string) => createHash("sha256").update(s).digest();
 const same = (a: string, b: string) => timingSafeEqual(digest(a), digest(b));
 
 /** The signing key comes from the admin password, so changing the password signs everyone out. */
-const key = () => createHash("sha256").update(`sds-admin|${process.env.ADMIN_PASSWORD}|${process.env.BLOB_READ_WRITE_TOKEN ?? ""}`).digest();
-const sign = (payload: string) => createHmac("sha256", key()).update(payload).digest("base64url");
+const key = async () => createHash("sha256").update(`sds-admin|${process.env.ADMIN_PASSWORD}|${await overrideKey()}|${process.env.BLOB_READ_WRITE_TOKEN ?? ""}`).digest();
+const sign = async (payload: string) => createHmac("sha256", await key()).update(payload).digest("base64url");
 
-export function checkLogin(user: string, password: string): boolean {
+export async function checkLogin(user: string, password: string): Promise<boolean> {
   if (!adminConfigured()) return false;
   // evaluate both so the time taken does not reveal which one was wrong
-  const u = same(user, process.env.ADMIN_USER as string);
-  const p = same(password, process.env.ADMIN_PASSWORD as string);
+  const u = same(user, await effectiveUser());
+  const p = await checkPassword(password);
   return u && p;
 }
 
@@ -25,7 +26,7 @@ export async function startSession() {
   const exp = Date.now() + MAX_AGE * 1000;
   const payload = String(exp);
   const jar = await cookies();
-  jar.set(COOKIE, `${payload}.${sign(payload)}`, {
+  jar.set(COOKIE, `${payload}.${await sign(payload)}`, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "strict",
@@ -44,7 +45,7 @@ export async function isAdmin(): Promise<boolean> {
   if (!v) return false;
   const [payload, sig] = v.split(".");
   if (!payload || !sig) return false;
-  const expected = sign(payload);
+  const expected = await sign(payload);
   if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
   return Number(payload) > Date.now();
 }

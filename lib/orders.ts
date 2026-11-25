@@ -40,6 +40,8 @@ export type Order = {
   notes: string;
   items: OrderItem[];
   total: number;
+  /** delivery fee included in the total (0 when none) */
+  fee?: number;
   /** fingerprint used to ignore the same order sent twice */
   sig?: string;
 };

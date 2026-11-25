@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { ChefHat, Clock, PartyPopper, ArrowRight } from "lucide-react";
 import { img, photo, MARQUEE } from "@/lib/data";
 import { Embers, Marquee, ParallaxBg, Reveal, SplitWords, SplitWordsH2, Stagger, Tilt } from "@/components/Motion";
@@ -7,6 +7,7 @@ import { HeroIntro } from "@/components/HeroIntro";
 import { HeroLogo } from "@/components/HeroLogo";
 import { PromoStrip } from "@/components/PromoStrip";
 import { ContactBand } from "@/components/ContactBand";
+import { SettingText } from "@/components/SettingText";
 
 const options = [
   { title: "Fritos", desc: "Coxinha, quibe, bolinhas e mais. Bem sequinhos e dourados.", from: "Cento a partir de", price: 70, unit: "", img: photo("bolinhas"), href: "/cardapio#fritos" },
@@ -30,7 +31,7 @@ export default function Home() {
         <div className="hero-in">
           <HeroIntro />
           <SplitWords text="Seu lanche gostoso, sem complicação." delay={0.35} />
-          <p className="lead hero-fade">Salgados fritos e assados, buffet de minis e bolos caseiros. Praticidade para a sua rotina e sabor para os seus grandes momentos.</p>
+          <p className="lead hero-fade"><SettingText k="description" /></p>
           <div className="hero-cta hero-fade">
             <Button size="lg" href="/cardapio" magnetic><BagIcon size={20} /> <span>Montar meu pedido</span></Button>
             <Button size="lg" variant="outline" href="/festas" magnetic>Festas e eventos</Button>
@@ -95,8 +96,8 @@ export default function Home() {
       <section className="cta">
         <ParallaxBg src={img("pao-de-queijo-assado")} overlay="linear-gradient(180deg,rgba(20,12,8,.82),rgba(20,12,8,.93))" amount={20} zoom={false} />
         <Reveal className="cta-in">
-          <h2>Faça seu pedido sem perder tempo.</h2>
-          <p>Escolha os produtos no cardápio, finalize no carrinho e seu pedido chega direto no nosso WhatsApp.</p>
+          <h2><SettingText k="ctaTitle" /></h2>
+          <p><SettingText k="ctaText" /></p>
           <Button size="lg" href="/cardapio" magnetic><BagIcon size={20} /> <span>Montar meu pedido</span></Button>
         </Reveal>
       </section>

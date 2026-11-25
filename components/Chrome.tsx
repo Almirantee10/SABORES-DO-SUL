@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Copy, Plus, X } from "lucide-react";
-import { PAGES, fmt, maxFlavors, waUrl, WA_LABEL } from "@/lib/data";
+import { PAGES, fmt, maxFlavors, waUrl, waLabel } from "@/lib/data";
 import { promoPrice } from "@/lib/promo";
 import { useCatalog } from "./Catalog";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
@@ -247,6 +247,8 @@ export function ProductSheet() {
 /* -------------------------------------------------------------- SentSheet */
 export function SentSheet() {
   const { sent, setSent, showToast, finishOrder } = useStore();
+  const { settings } = useCatalog();
+  const WA_LABEL = waLabel(settings.whatsapp);
   if (!sent) return null;
   const opened = () => {
     // the order is on its way to WhatsApp: start the next one with an empty cart
@@ -267,7 +269,7 @@ export function SentSheet() {
       onClose={() => setSent(null)}
       footer={
         <>
-          <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent)} target="_blank" rel="noopener noreferrer" onClick={opened}><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
+          <a className="btn btn-whatsapp btn-lg btn-full" href={waUrl(sent, settings.whatsapp)} target="_blank" rel="noopener noreferrer" onClick={opened}><WhatsAppIcon size={22} /> <span>Abrir WhatsApp</span></a>
           <Button variant="outline" size="lg" full onClick={copy}><Copy size={18} /> <span>Copiar mensagem</span></Button>
         </>
       }
