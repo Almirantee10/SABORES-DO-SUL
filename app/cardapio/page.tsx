@@ -5,6 +5,7 @@ import { CATS, TAB_INFO } from "@/lib/data";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
 import { PromoStrip } from "@/components/PromoStrip";
+import { XmasTouch } from "@/components/XmasTouch";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
 import { CategoryTabs, InfoPill } from "@/components/ui";
 import { ProductInline } from "@/components/ProductInline";
@@ -56,6 +57,7 @@ export default function Cardapio() {
   return (
     <div ref={root}>
       <section className="mh">
+        <XmasTouch />
         <h1 className="mh-title">Cardápio</h1>
         <ShopStatus />
         <div className="mh-rest">

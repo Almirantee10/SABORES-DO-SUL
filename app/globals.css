@@ -203,6 +203,12 @@ main{flex:1}
 
 /* cardapio header (burgundy fading into the page) */
 .mh{background:linear-gradient(180deg,#311312 0%,#271110 38%,#150D0C 100%);padding:40px 20px 36px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;border-bottom:1px solid var(--border-subtle)}
+.mh{position:relative;overflow:hidden}
+.xmas{position:absolute;inset:0;pointer-events:none}
+.xmas-garland{position:absolute;top:0;left:0;right:0;height:30px;opacity:.8;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='30' viewBox='0 0 90 30'%3E%3Cpath d='M0 2 Q45 26 90 2' fill='none' stroke='%232f5d3a' stroke-width='2.2' stroke-linecap='round'/%3E%3Ccircle cx='22' cy='14' r='2.6' fill='%23C0392B'/%3E%3Ccircle cx='45' cy='17' r='2.6' fill='%23E0B650'/%3E%3Ccircle cx='68' cy='14' r='2.6' fill='%23C0392B'/%3E%3C/svg%3E") repeat-x top left}
+.xmas-flake{position:absolute;top:-6px;border-radius:50%;background:#F5EBDD;opacity:.5;animation:xmas-fall linear infinite}
+@keyframes xmas-fall{0%{transform:translate(0,0)}50%{transform:translate(8px,110px)}100%{transform:translate(-4px,230px);opacity:0}}
+@media (prefers-reduced-motion:reduce){.xmas-flake{display:none}}
 .mh-logo{width:118px;height:118px;border-radius:50%;box-shadow:0 10px 30px rgba(0,0,0,.5)}
 .mh-title{font:700 clamp(46px,9vw,84px)/1.05 var(--font-serif);text-transform:uppercase;letter-spacing:.06em;background:linear-gradient(180deg,#EFD27D 0%,#E0B650 60%,#C79A3A 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
 .mh-rest{display:flex;flex-direction:column;align-items:center;gap:14px}
