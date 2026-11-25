@@ -5,6 +5,7 @@ import { Embers, Marquee, ParallaxBg, Reveal, SplitWords, SplitWordsH2, Stagger,
 import { Badge, BagIcon, Button, PriceTag, SectionHeading } from "@/components/ui";
 import { HeroIntro } from "@/components/HeroIntro";
 import { HeroLogo } from "@/components/HeroLogo";
+import { HeroBanner } from "@/components/HeroBanner";
 import { PromoStrip } from "@/components/PromoStrip";
 import { ContactBand } from "@/components/ContactBand";
 import { SettingText } from "@/components/SettingText";
@@ -25,7 +26,7 @@ export default function Home() {
   return (
     <>
       <section className="hero hero-logo-on">
-        <ParallaxBg src={photo("hero-salgados")} overlay="linear-gradient(180deg,rgba(21,13,12,.1) 0%,rgba(21,13,12,.58) 50%,rgba(21,13,12,.9) 100%)" amount={10} zoom={false} className="hero-bg-food" />
+        <HeroBanner />
         <Embers />
         <HeroLogo />
         <div className="hero-in">

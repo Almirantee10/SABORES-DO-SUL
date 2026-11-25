@@ -24,7 +24,7 @@ export async function api<T = unknown>(path: string, method: "GET" | "POST" | "P
 }
 
 /** Shrinks a phone photo to a web-sized JPEG (long side 1200 px) before it is uploaded. */
-export async function toJpeg(file: File, maxSide = 1200): Promise<File> {
+export async function toJpeg(file: File, maxSide = 1200, png = false): Promise<File> {
   const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
   const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
   const w = Math.max(1, Math.round(bmp.width * scale));
@@ -34,19 +34,23 @@ export async function toJpeg(file: File, maxSide = 1200): Promise<File> {
   canvas.height = h;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Não foi possível preparar a foto.");
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, w, h);
+  if (!png) {
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, w, h);
+  }
   ctx.drawImage(bmp, 0, 0, w, h);
   bmp.close();
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.85));
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, png ? "image/png" : "image/jpeg", 0.85));
   if (!blob) throw new Error("Não foi possível preparar a foto.");
-  return new File([blob], "foto.jpg", { type: "image/jpeg" });
+  return new File([blob], png ? "logo.png" : "foto.jpg", { type: png ? "image/png" : "image/jpeg" });
 }
 
-export async function uploadPhoto(file: File): Promise<string> {
-  const jpeg = await toJpeg(file);
+/** kind "png" keeps transparency (logos, max 700 px); "banner" is a wide JPEG (max 1800 px). */
+export async function uploadPhoto(file: File, kind: "photo" | "png" | "banner" = "photo"): Promise<string> {
+  const jpeg = await toJpeg(file, kind === "png" ? 700 : kind === "banner" ? 1800 : 1200, kind === "png");
   const form = new FormData();
   form.append("file", jpeg);
+  if (kind === "png") form.append("kind", "png");
   const res = await fetch("/api/admin/upload", { method: "POST", headers: { "x-requested-with": "sds" }, body: form });
   let data: { url?: string; error?: string } = {};
   try {

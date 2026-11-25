@@ -21,7 +21,7 @@ function image(v: unknown): string | null {
   if (s.startsWith("/assets/photos/") && !s.includes("..")) return s;
   if (/^https:\/\/[a-z0-9-]+\.public\.blob\.vercel-storage\.com\/[\w./%-]+$/i.test(s)) return s;
   // local development only: uploads are kept inline instead of in Blob
-  if (process.env.NODE_ENV !== "production" && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(s) && s.length < 600_000) return s;
+  if (process.env.NODE_ENV !== "production" && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+/=]+$/.test(s) && s.length < 600_000) return s;
   return null;
 }
 
@@ -181,6 +181,10 @@ export function sanitizeSettings(raw: unknown): { ok: true; settings: Settings }
   const pay = (Array.isArray(r.pay) ? r.pay : []).filter((p): p is string => typeof p === "string" && PAY.some((x) => x.id === p));
   if (!pay.length) return { ok: false, error: "deixe ao menos uma forma de pagamento ativada" };
 
+  const img = (k: "logo" | "badge" | "banner") => image(r[k]);
+  const logo = img("logo"), badge = img("badge"), banner = img("banner");
+  if (logo === null || badge === null || banner === null) return { ok: false, error: "imagem inválida" };
+
   const text = (k: keyof Settings, max: number) => str(r[k], max) || (k === "hours" || k === "deliveryNote" ? "" : (d[k] as string));
   return {
     ok: true,
@@ -197,6 +201,7 @@ export function sanitizeSettings(raw: unknown): { ok: true; settings: Settings }
       menuNote: text("menuNote", 200),
       ctaTitle: text("ctaTitle", 80),
       ctaText: text("ctaText", 200),
+      logo, badge, banner,
     },
   };
 }

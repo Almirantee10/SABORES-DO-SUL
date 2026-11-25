@@ -24,6 +24,10 @@ export type Settings = {
   menuNote: string;
   ctaTitle: string;
   ctaText: string;
+  /** own images (empty = the ones shipped with the site): header/footer logo, round badge on the home page, home page banner */
+  logo: string;
+  badge: string;
+  banner: string;
 };
 
 /** Everything the admin can change: the menu, the categories, the promotions, the settings and whether the shop is taking orders. */
@@ -54,6 +58,9 @@ export const defaultSettings = (): Settings => ({
   menuNote: "Tudo é feito sob encomenda. Valores e sabores conforme o cardápio.",
   ctaTitle: "Faça seu pedido sem perder tempo.",
   ctaText: "Escolha os produtos no cardápio, finalize no carrinho e seu pedido chega direto no nosso WhatsApp.",
+  logo: "",
+  badge: "",
+  banner: "",
 });
 
 /**

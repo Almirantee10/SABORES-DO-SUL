@@ -2,11 +2,13 @@
 
 import { useRef } from "react";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
+import { useCatalog } from "@/components/Catalog";
 
 /* eslint-disable @next/next/no-img-element */
 /** Brand seal for the empty top of the hero: pops in, then floats while a gold ring turns and a glint sweeps across. */
 export function HeroLogo() {
   const root = useRef<HTMLDivElement>(null);
+  const { settings } = useCatalog();
 
   useGSAP(() => {
     if (noMotion()) { gsap.set(".hl-wrap", { opacity: 1 }); return; }
@@ -22,7 +24,7 @@ export function HeroLogo() {
         <div className="hl-wrap" style={{ opacity: 0 }}>
           <i className="hl-ring" aria-hidden />
           <div className="hl-disc">
-            <img src="/assets/logo/logo-badge-circle.png" alt="Sabores do Sul — Salgados, Pães, Cucas — Palmas-TO" />
+            <img src={settings.badge || "/assets/logo/logo-badge-circle.png"} alt="Sabores do Sul — Salgados, Pães, Cucas — Palmas-TO" />
             <i className="hl-glint" aria-hidden />
           </div>
         </div>

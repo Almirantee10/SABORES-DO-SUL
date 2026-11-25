@@ -1,3 +1,7 @@
+"use client";
+
+import { useCatalog } from "@/components/Catalog";
+
 export function WhatsAppIcon({ size = 22, color = "currentColor" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={color} aria-hidden>
@@ -18,9 +22,10 @@ export function InstagramIcon({ size = 22, color = "currentColor" }: { size?: nu
 
 /* eslint-disable @next/next/no-img-element */
 export function Logo({ height = 44, tagline = false }: { height?: number; tagline?: boolean }) {
+  const { settings } = useCatalog();
   return (
     <img
-      src={tagline ? "/assets/logo/logo-tagline-gold.png" : "/assets/logo/logo-gold.png"}
+      src={settings.logo || (tagline ? "/assets/logo/logo-tagline-gold.png" : "/assets/logo/logo-gold.png")}
       alt="Sabores do Sul — Salgados, Pães, Cucas"
       style={{ height, width: "auto", display: "block" }}
     />

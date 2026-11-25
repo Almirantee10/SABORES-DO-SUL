@@ -34,12 +34,13 @@ export async function writeStore(data: StoreData): Promise<void> {
 }
 
 /** Stores a product photo and returns the address to show it from. */
-export async function saveImage(file: File): Promise<string> {
+export async function saveImage(file: File, png = false): Promise<string> {
   const bytes = Buffer.from(await file.arrayBuffer());
+  const type = png ? "image/png" : "image/jpeg";
   if (hasBlob()) {
-    const out = await put(`products/${randomBytes(6).toString("hex")}.jpg`, bytes, { access: "public", contentType: "image/jpeg", addRandomSuffix: false });
+    const out = await put(`products/${randomBytes(6).toString("hex")}.${png ? "png" : "jpg"}`, bytes, { access: "public", contentType: type, addRandomSuffix: false });
     return out.url;
   }
   if (process.env.NODE_ENV === "production") throw new Error("armazenamento não configurado");
-  return `data:image/jpeg;base64,${bytes.toString("base64")}`;
+  return `data:${type};base64,${bytes.toString("base64")}`;
 }

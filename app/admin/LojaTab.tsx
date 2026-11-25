@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Save } from "lucide-react";
+import { ImagePlus, Save } from "lucide-react";
 import { PAY, waLabel } from "@/lib/data";
-import { api, ApiError, moneyText, parseMoney } from "@/lib/admin-client";
+import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-client";
 import { defaultSettings, type Settings, type StoreData } from "@/lib/store-data";
 import { useCatalog } from "@/components/Catalog";
 
@@ -84,6 +84,39 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
     }
   };
 
+  const [upKey, setUpKey] = useState<string | null>(null);
+  const pickImage = async (k: "logo" | "badge" | "banner", file: File | undefined, kind: "png" | "banner") => {
+    if (!file) return;
+    setUpKey(k);
+    setMsg(null);
+    try {
+      const url = await uploadPhoto(file, kind);
+      setF((cur) => (cur ? { ...cur, [k]: url } : cur));
+    } catch (e) {
+      if (!expired(e)) setMsg({ ok: false, text: e instanceof Error ? e.message : "Não foi possível enviar a imagem." });
+    } finally {
+      setUpKey(null);
+    }
+  };
+  const imageField = (k: "logo" | "badge" | "banner", label: string, hint: string, kind: "png" | "banner", fallback: string) => (
+    <div className="adm-f">
+      <span>{label}</span>
+      <div className="adm-photo">
+        <div style={{ width: k === "banner" ? 160 : 96, height: 96, borderRadius: 12, background: "var(--sds-espresso-900)", border: "1px solid rgba(245,235,221,.14)", display: "grid", placeItems: "center", overflow: "hidden" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={f![k] || fallback} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: k === "banner" ? "cover" : "contain", width: k === "banner" ? "100%" : undefined, height: k === "banner" ? "100%" : undefined }} />
+        </div>
+        <div>
+          <label className="btn btn-outline btn-sm" style={{ cursor: "pointer" }}>
+            <ImagePlus size={16} /> <span>{upKey === k ? "Enviando…" : f![k] ? "Trocar" : "Escolher imagem"}</span>
+            <input type="file" accept="image/*" hidden disabled={upKey !== null} onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; void pickImage(k, file, kind); }} />
+          </label>
+          {f![k] && <button className="btn btn-ghost btn-sm" onClick={() => set(k, "")}>Voltar ao original</button>}
+          <p className="adm-note">{hint}</p>
+        </div>
+      </div>
+    </div>
+  );
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setF((cur) => (cur ? { ...cur, [k]: v } : cur));
   const text = (k: keyof Settings, label: string, opts: { max: number; placeholder?: string; area?: boolean; hint?: string }) => (
     <label className="adm-f">
@@ -118,6 +151,13 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
         <p className="adm-note">Carregando configurações…</p>
       ) : (
         <>
+          <section className="adm-card">
+            <h2>Logo e banner</h2>
+            {imageField("logo", "Logo do topo e do rodapé", "Use PNG com fundo transparente, horizontal, de preferência dourada ou clara (o topo é escuro).", "png", "/assets/logo/logo-gold.png")}
+            {imageField("badge", "Selo redondo da página inicial", "Imagem quadrada ou redonda; PNG transparente fica melhor.", "png", "/assets/logo/logo-badge-circle.png")}
+            {imageField("banner", "Banner da página inicial (foto de fundo)", "Foto horizontal, de preferência escura ou com pouca luz atrás do texto.", "banner", "/assets/photos/hero-salgados.jpg")}
+          </section>
+
           <section className="adm-card">
             <h2>Contato e horário</h2>
             <label className="adm-f">
