@@ -551,6 +551,19 @@ input[type=date],input[type=time]{color-scheme:dark}
 .field-box.multi{align-items:flex-start;padding:12px 14px}
 .field-box:focus-within{border-color:var(--sds-gold-500);box-shadow:0 0 0 3px rgba(242,194,74,.25)}
 .field-box input,.field-box textarea{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--sds-cream-50);font:400 15px/1.4 var(--font-body);resize:vertical}
+.tp{position:relative}
+.tp-btn{width:100%;cursor:pointer;font:400 15px/1.4 var(--font-body);color:var(--sds-gold-400);text-align:left}
+.tp-btn span{color:var(--sds-cream-50)}
+.tp-btn .tp-ph{color:rgba(201,174,140,.6)}
+.tp-pop{position:absolute;z-index:30;top:calc(100% + 6px);right:0;width:min(240px,calc(100vw - 32px));background:var(--sds-espresso-900);border:1px solid var(--sds-gold-500);border-radius:var(--radius-md);box-shadow:0 12px 32px rgba(0,0,0,.5);padding:10px}
+.tp-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tp-col{display:flex;flex-direction:column;gap:2px;max-height:208px;overflow-y:auto;padding-right:2px}
+.tp-col b{position:sticky;top:0;background:var(--sds-espresso-900);font:500 11px/1 var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);padding:4px 0 6px}
+.tp-col button{min-height:38px;border:0;border-radius:8px;background:none;color:var(--sds-cream-50);font:400 15px/1 var(--font-body);cursor:pointer}
+.tp-col button:hover{background:rgba(242,194,74,.12)}
+.tp-col button.tp-on{background:var(--sds-gold-500);color:var(--sds-espresso-900);font-weight:600}
+.tp-ok{margin-top:10px;width:100%;min-height:40px;border:1px solid var(--sds-gold-500);border-radius:8px;background:none;color:var(--sds-gold-400);font:500 14px/1 var(--font-body);cursor:pointer}
+.tp-ok:disabled{opacity:.4;cursor:default}
 .field-box select{flex:1;min-width:0;min-height:44px;background:none;border:0;outline:0;color:var(--sds-cream-50);font:400 15px/1.4 var(--font-body)}
 .field-box select option{background:var(--sds-espresso-900);color:var(--sds-cream-50)}
 .field-box ::placeholder{color:rgba(201,174,140,.6)}
