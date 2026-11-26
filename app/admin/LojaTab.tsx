@@ -9,6 +9,22 @@ import { useCatalog } from "@/components/Catalog";
 
 type Msg = { ok: boolean; text: string } | null;
 
+type Hours = { days: string; open: string; close: string };
+/** "08:30" -> "8h30", "18:00" -> "18h" */
+const clock = (t: string) => { const m = /^(\d{1,2}):(\d{2})$/.exec(t); return m ? `${+m[1]}h${m[2] === "00" ? "" : m[2]}` : ""; };
+/** "8h30" -> "08:30" */
+const unclock = (h: string, m?: string) => `${h.padStart(2, "0")}:${m ?? "00"}`;
+const composeHours = ({ days, open, close }: Hours) => {
+  const o = clock(open), c = clock(close);
+  const times = o && c ? `das ${o} às ${c}` : o ? `a partir das ${o}` : c ? `até às ${c}` : "";
+  return [days, times].filter((x) => x.trim()).join(", ");
+};
+const parseHours = (s: string): Hours => {
+  const m = /^(.*?)(?:,\s*)?das (\d{1,2})h(\d{2})? às (\d{1,2})h(\d{2})?$/.exec(s);
+  if (m) return { days: m[1], open: unclock(m[2], m[3]), close: unclock(m[4], m[5]) };
+  return { days: s, open: "", close: "" };
+};
+
 export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
   const catalog = useCatalog();
   const [open, setOpen] = useState(catalog.open);
@@ -128,6 +144,8 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
     </label>
   );
 
+  const hrs = parseHours(f?.hours ?? "");
+
   return (
     <div className="adm-pane">
       <p className="adm-note">Abra ou feche a loja e mude contato, entrega, pagamento e textos. Tudo vale no site assim que você salvar.</p>
@@ -167,7 +185,16 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
             </label>
             {text("instagram", "Instagram (só o nome de usuário)", { max: 80, placeholder: "saboresdosulpalmas", hint: "Deixe em branco para esconder o link." })}
             {text("tagline", "Frase de apresentação", { max: 80 })}
-            {text("hours", "Horário de funcionamento (opcional)", { max: 200, placeholder: "Seg a sáb, das 8h às 18h", hint: "Aparece na página inicial, junto do contato." })}
+            <div className="adm-f">
+              <span>Horário de funcionamento (opcional)</span>
+              <input aria-label="Dias de funcionamento" value={hrs.days} maxLength={80} placeholder="Dias. Ex.: Seg a sáb" onChange={(e) => set("hours", composeHours({ ...hrs, days: e.target.value }))} />
+              <div className="adm-two">
+                <label className="adm-f"><span>Abre às</span><input type="time" value={hrs.open} onChange={(e) => set("hours", composeHours({ ...hrs, open: e.target.value }))} /></label>
+                <label className="adm-f"><span>Fecha às</span><input type="time" value={hrs.close} onChange={(e) => set("hours", composeHours({ ...hrs, close: e.target.value }))} /></label>
+              </div>
+              <small className="adm-note">Digite o horário no relógio. {f.hours ? <>Aparece assim no site: <b>{f.hours}</b></> : "Deixe em branco para não mostrar."}</small>
+              {f.hours && <div><button className="btn btn-ghost btn-sm" onClick={() => set("hours", "")}>Limpar horário</button></div>}
+            </div>
           </section>
 
           <section className="adm-card">
