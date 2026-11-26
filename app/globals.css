@@ -551,6 +551,8 @@ input[type=date],input[type=time]{color-scheme:dark}
 .field-box.multi{align-items:flex-start;padding:12px 14px}
 .field-box:focus-within{border-color:var(--sds-gold-500);box-shadow:0 0 0 3px rgba(242,194,74,.25)}
 .field-box input,.field-box textarea{flex:1;min-width:0;background:none;border:0;outline:0;color:var(--sds-cream-50);font:400 15px/1.4 var(--font-body);resize:vertical}
+.field-box select{flex:1;min-width:0;min-height:44px;background:none;border:0;outline:0;color:var(--sds-cream-50);font:400 15px/1.4 var(--font-body)}
+.field-box select option{background:var(--sds-espresso-900);color:var(--sds-cream-50)}
 .field-box ::placeholder{color:rgba(201,174,140,.6)}
 .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:12px 14px;background:var(--sds-espresso-900);border:1px solid var(--border-subtle);border-radius:var(--radius-md);cursor:pointer;transition:border-color .25s,background .25s}
 .opt:hover:not(:disabled){border-color:var(--border-gold)}

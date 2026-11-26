@@ -14,6 +14,9 @@ import { WhatsAppIcon } from "@/components/Brand";
 import { Button, Field, OptionRow, PriceTag, QuantityStepper, SectionHeading, Thumb } from "@/components/ui";
 import { CountUp, Reveal } from "@/components/Motion";
 
+/** 06:00 to 22:00, every 30 minutes */
+const TIMES = Array.from({ length: 33 }, (_, i) => `${String(6 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`);
+
 export default function Carrinho() {
   const { cart, fee, grand, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated } = useStore();
   const root = useRef<HTMLDivElement>(null);
@@ -169,7 +172,14 @@ export default function Carrinho() {
               <span className="lbl">Data e horário da {verb} (obrigatório)</span>
               <div className="when">
                 <Field type="date" required min={today || undefined} aria-label={`Data da ${verb}`} value={checkout.date} onChange={(e) => setCheckout({ date: e.target.value })} />
-                <Field type="time" required aria-label={`Horário da ${verb}`} value={checkout.time} onChange={(e) => setCheckout({ time: e.target.value })} />
+                <label className="field">
+                  <span className="field-box">
+                    <select required aria-label={`Horário da ${verb}`} value={checkout.time} onChange={(e) => setCheckout({ time: e.target.value })}>
+                      <option value="">Horário</option>
+                      {TIMES.map((t) => <option key={t} value={t}>{t.replace(":00", "h").replace(":", "h")}</option>)}
+                    </select>
+                  </span>
+                </label>
               </div>
             </div>
             <div className="grp">
