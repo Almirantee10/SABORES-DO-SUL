@@ -1,6 +1,7 @@
 import { connection } from "next/server";
 import { isAdmin, sameOrigin } from "@/lib/server/auth";
-import { isStatus, listOrders, ordersConfigured, repeatOrder, setPayStatus, setStatus } from "@/lib/server/orders";
+import { deleteOrder, isStatus, listOrders, ordersConfigured, patchOrder, repeatOrder, setPayStatus, setStatus } from "@/lib/server/orders";
+import { sanitizeEdit } from "@/lib/server/order-edit";
 import type { OrderStatus } from "@/lib/orders";
 
 /** Admin: every order of the last 12 months, newest first. */
@@ -20,11 +21,21 @@ export async function PUT(req: Request) {
   if (!sameOrigin(req)) return Response.json({ error: "pedido não permitido" }, { status: 403 });
   if (!(await isAdmin())) return Response.json({ error: "Entre novamente." }, { status: 401 });
 
-  let body: { id?: unknown; status?: unknown; payStatus?: unknown } = {};
+  let body: { id?: unknown; status?: unknown; payStatus?: unknown; edit?: unknown } = {};
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: "dados inválidos" }, { status: 400 });
+  }
+  if (body.edit !== undefined) {
+    if (typeof body.id !== "string") return Response.json({ error: "dados inválidos" }, { status: 400 });
+    const res = sanitizeEdit(body.edit);
+    if (!res.ok) return Response.json({ error: res.error }, { status: 400 });
+    try {
+      return (await patchOrder(body.id, res.patch)) ? Response.json({ ok: true }) : Response.json({ error: "Pedido não encontrado." }, { status: 404 });
+    } catch {
+      return Response.json({ error: "Não foi possível salvar. Tente de novo." }, { status: 500 });
+    }
   }
   const paying = body.payStatus === "pago" || body.payStatus === "pendente";
   if (typeof body.id !== "string" || (!paying && !isStatus(body.status))) return Response.json({ error: "dados inválidos" }, { status: 400 });
@@ -52,5 +63,22 @@ export async function POST(req: Request) {
     return id ? Response.json({ ok: true, id }) : Response.json({ error: "Pedido não encontrado." }, { status: 404 });
   } catch {
     return Response.json({ error: "Não foi possível repetir o pedido. Tente de novo." }, { status: 500 });
+  }
+}
+/** Admin: deletes an order for good. */
+export async function DELETE(req: Request) {
+  if (!sameOrigin(req)) return Response.json({ error: "pedido não permitido" }, { status: 403 });
+  if (!(await isAdmin())) return Response.json({ error: "Entre novamente." }, { status: 401 });
+  let body: { id?: unknown } = {};
+  try {
+    body = await req.json();
+  } catch {
+    return Response.json({ error: "dados inválidos" }, { status: 400 });
+  }
+  if (typeof body.id !== "string") return Response.json({ error: "dados inválidos" }, { status: 400 });
+  try {
+    return (await deleteOrder(body.id)) ? Response.json({ ok: true }) : Response.json({ error: "Pedido não encontrado." }, { status: 404 });
+  } catch {
+    return Response.json({ error: "Não foi possível excluir. Tente de novo." }, { status: 500 });
   }
 }

@@ -699,3 +699,6 @@ input[type=date],input[type=time]{color-scheme:dark}
 .adm-pos{width:44px;text-align:center;background:var(--sds-espresso-900);border:1px solid var(--border-subtle);border-radius:8px;color:var(--sds-cream-50);padding:6px 4px;font:400 14px/1 var(--font-body)}
 
 .adm-prices[hidden]{display:none}
+
+.ord-foot{flex-wrap:wrap;gap:6px}
+.ord-foot .adm-del{margin-left:auto}

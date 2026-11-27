@@ -8,7 +8,7 @@ export class ApiError extends Error {
   }
 }
 
-export async function api<T = unknown>(path: string, method: "GET" | "POST" | "PUT", body?: unknown): Promise<T> {
+export async function api<T = unknown>(path: string, method: "GET" | "POST" | "PUT" | "DELETE", body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
     cache: "no-store",

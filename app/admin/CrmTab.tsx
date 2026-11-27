@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Columns3, Download, FileSpreadsheet, FileText, List, MapPin, MessageCircle, RefreshCw, Repeat, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Columns3, Download, Pencil, Trash2, XCircle, FileSpreadsheet, FileText, List, MapPin, MessageCircle, RefreshCw, Repeat, Search } from "lucide-react";
 import { useCatalog } from "@/components/Catalog";
 import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/admin-client";
 import { todayStr } from "@/lib/promo";
 import { STATUS, payState, grossOf, discountOf, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
 import { BarChart, Donut, HBars } from "./charts";
+import { OrderEditor } from "./OrderEditor";
 
 export type CrmView = "dashboard" | "pedidos" | "clientes" | "faturamento" | "relatorios";
 const PERIODS = [
@@ -132,6 +133,21 @@ export function CrmTab({ view, onSignedOut }: { view: CrmView; onSignedOut: () =
     }
   };
 
+  const [editing, setEditing] = useState<Order | null>(null);
+  const remove = async (o: Order) => {
+    if (!window.confirm(`Excluir de vez o pedido ${num(o.id)} de ${o.name}? Isso não pode ser desfeito e ele sai do faturamento e do histórico.`)) return;
+    try {
+      await api("/api/admin/orders", "DELETE", { id: o.id });
+      setOrders((cur) => (cur ? cur.filter((x) => x.id !== o.id) : cur));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) onSignedOut();
+      else setErr(e instanceof Error ? e.message : "Não foi possível excluir o pedido.");
+    }
+  };
+  const cancel = (o: Order) => {
+    if (window.confirm(`Marcar o pedido ${num(o.id)} de ${o.name} como cancelado? Ele continua no histórico, mas não conta no faturamento.`)) void setStatus(o.id, "cancelado");
+  };
+
   const repeat = async (id: string) => {
     try {
       await api("/api/admin/orders", "POST", { repeat: id });
@@ -190,9 +206,10 @@ export function CrmTab({ view, onSignedOut }: { view: CrmView; onSignedOut: () =
         </section>
       )}
 
+      {editing && <OrderEditor order={editing} onClose={() => setEditing(null)} onSignedOut={onSignedOut} onSaved={() => { setEditing(null); void load(); }} />}
       {orders !== null && view === "dashboard" && <Dashboard orders={orders} />}
       {orders !== null && view === "faturamento" && <><Quick orders={orders} /><Resumo orders={inPeriod} from={from} to={to} s={s} /></>}
-      {orders !== null && view === "relatorios" && <><Itens orders={inPeriod} /><Vendas orders={inPeriod} /></>}      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} onRepeat={repeat} />}
+      {orders !== null && view === "relatorios" && <><Itens orders={inPeriod} /><Vendas orders={inPeriod} /></>}      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} onRepeat={repeat} onEdit={setEditing} onDelete={remove} onCancel={cancel} />}
       {orders !== null && view === "clientes" && <Clientes orders={inPeriod} />}
     </div>
   );
@@ -249,7 +266,7 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
 }
 
 /* ----------------------------------------------------------------- pedidos */
-function Pedidos({ orders, onStatus, onPay, onRepeat }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void; onPay: (id: string, p: "pendente" | "pago") => void; onRepeat: (id: string) => void }) {
+function Pedidos({ orders, onStatus, onPay, onRepeat, onEdit, onDelete, onCancel }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void; onPay: (id: string, p: "pendente" | "pago") => void; onRepeat: (id: string) => void; onEdit: (o: Order) => void; onDelete: (o: Order) => void; onCancel: (o: Order) => void }) {
   const [status, setStatus] = useState<OrderStatus | "todos">("todos");
   const [q, setQ] = useState("");
   const [board, setBoard] = useState(false);
@@ -290,6 +307,7 @@ function Pedidos({ orders, onStatus, onPay, onRepeat }: { orders: Order[]; onSta
                     {o.status !== "cancelado" && <button className={`paybtn${o.payStatus === "pago" ? " paid" : ""}`} aria-pressed={o.payStatus === "pago"} onClick={() => onPay(o.id, o.payStatus === "pago" ? "pendente" : "pago")}>{o.payStatus === "pago" ? "✓ Pago" : "A receber"}</button>}
                     <p className="kan-items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                     <footer>
+                      <button className="iconbtn iconbtn-ghost" aria-label="Editar pedido" onClick={() => onEdit(o)}><Pencil size={16} /></button>
                       <button className="iconbtn iconbtn-ghost" aria-label="Voltar etapa" disabled={si === 0 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si - 1].id)}><ChevronLeft size={18} /></button>
                       {o.phone && <a className="iconbtn iconbtn-ghost" aria-label="Chamar no WhatsApp" href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /></a>}
                       <button className="iconbtn iconbtn-ghost" aria-label="Avançar etapa" disabled={si >= STATUS.length - 2 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si + 1].id)}><ChevronRight size={18} /></button>
@@ -327,7 +345,12 @@ function Pedidos({ orders, onStatus, onPay, onRepeat }: { orders: Order[]; onSta
             ))}
           </ul>
           {o.notes && <p className="ord-note">Obs. do pedido: {o.notes}</p>}
-          <div className="ord-foot"><button className="btn btn-ghost btn-sm" onClick={() => { if (window.confirm(`Repetir o pedido ${num(o.id)} de ${o.name}? Um novo pedido igual será criado como Novo.`)) onRepeat(o.id); }}><Repeat size={15} /> <span>Repetir pedido</span></button></div>
+          <div className="ord-foot">
+            <button className="btn btn-outline btn-sm" onClick={() => onEdit(o)}><Pencil size={15} /> <span>Editar</span></button>
+            {o.status !== "cancelado" && <button className="btn btn-ghost btn-sm" onClick={() => onCancel(o)}><XCircle size={15} /> <span>Cancelar</span></button>}
+            <button className="btn btn-ghost btn-sm adm-del" onClick={() => onDelete(o)}><Trash2 size={15} /> <span>Excluir</span></button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { if (window.confirm(`Repetir o pedido ${num(o.id)} de ${o.name}? Um novo pedido igual será criado como Novo.`)) onRepeat(o.id); }}><Repeat size={15} /> <span>Repetir pedido</span></button>
+          </div>
         </article>
       ))}
     </>

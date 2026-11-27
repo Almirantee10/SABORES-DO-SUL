@@ -131,7 +131,7 @@ export async function setPayStatus(id: string, payStatus: "pendente" | "pago"): 
   return patchOrder(id, { payStatus });
 }
 
-async function patchOrder(id: string, patch: Partial<Order>): Promise<boolean> {
+export async function patchOrder(id: string, patch: Partial<Order>): Promise<boolean> {
   if (!/^\d{4}-\d{2}-[0-9a-f]{6}$/.test(id)) return false;
   let found = false;
   await mutate(id.slice(0, 7), (list) => {
@@ -144,8 +144,8 @@ async function patchOrder(id: string, patch: Partial<Order>): Promise<boolean> {
 
 /* --------------------------------------------------------------- validation */
 
-const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
-const num = (v: unknown, min: number, max: number) => {
+export const text = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
+export const num = (v: unknown, min: number, max: number) => {
   const n = Number(v);
   return Number.isFinite(n) && n >= min && n <= max ? n : null;
 };
@@ -205,3 +205,15 @@ export function sanitizeOrder(raw: unknown, settings: Settings): { ok: true; ord
 }
 
 export const isStatus = (v: unknown): v is OrderStatus => STATUS.some((s) => s.id === v);
+
+/** Permanently removes an order. */
+export async function deleteOrder(id: string): Promise<boolean> {
+  if (!/^\d{4}-\d{2}-[0-9a-f]{6}$/.test(id)) return false;
+  let found = false;
+  await mutate(id.slice(0, 7), (list) => {
+    if (!list.some((o) => o.id === id)) return null;
+    found = true;
+    return list.filter((o) => o.id !== id);
+  });
+  return found;
+}
