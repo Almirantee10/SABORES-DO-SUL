@@ -30,9 +30,13 @@ export async function POST(req: Request) {
   try {
     const { settings } = await readStore();
     const res = sanitizeOrder(body, settings);
-    if (!res.ok) return Response.json({ error: res.error }, { status: 400 });
+    if (!res.ok) {
+      console.error("[pedido recusado]", res.error);
+      return Response.json({ error: res.error }, { status: 400 });
+    }
     return Response.json({ id: await addOrder(res.order) });
-  } catch {
+  } catch (e) {
+    console.error("[pedido nao salvo]", e instanceof Error ? e.message : e);
     return Response.json({ error: "não foi possível registrar" }, { status: 500 });
   }
 }

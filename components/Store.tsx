@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { PAY, fmt, fmtDate } from "@/lib/data";
 import { promoPrice } from "@/lib/promo";
+import { flushOutbox } from "@/lib/orders-client";
 import { useCatalog } from "./Catalog";
 
 export type CartItem = {
@@ -70,6 +71,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     } catch {}
     setHydrated(true);
+    void flushOutbox();
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
