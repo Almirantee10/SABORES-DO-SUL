@@ -8,6 +8,7 @@ import { HeroLogo } from "@/components/HeroLogo";
 import { HeroBanner } from "@/components/HeroBanner";
 import { PromoStrip } from "@/components/PromoStrip";
 import { ContactBand } from "@/components/ContactBand";
+import { XmasTouch } from "@/components/XmasTouch";
 import { SettingText } from "@/components/SettingText";
 
 const options = [
@@ -28,6 +29,7 @@ export default function Home() {
       <section className="hero hero-logo-on">
         <HeroBanner />
         <Embers />
+        <XmasTouch tall />
         <HeroLogo />
         <div className="hero-in">
           <HeroIntro />
