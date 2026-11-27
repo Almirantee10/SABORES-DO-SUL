@@ -1,5 +1,6 @@
 import { CATALOG, CATS, PAY, TAB_INFO, WA, type Product } from "@/lib/data";
 import type { Promo } from "@/lib/promo";
+import { defaultSchedule, type Schedule } from "@/lib/schedule";
 
 export type Cat = { id: string; label: string; title: string; info: { label: string; value: string }[] };
 
@@ -28,6 +29,11 @@ export type Settings = {
   logo: string;
   badge: string;
   banner: string;
+  /** shop name and street address (shown on the site when filled) */
+  name: string;
+  address: string;
+  /** automatic opening and closing by day of the week */
+  schedule: Schedule;
 };
 
 /** Everything the admin can change: the menu, the categories, the promotions, the settings and whether the shop is taking orders. */
@@ -61,6 +67,9 @@ export const defaultSettings = (): Settings => ({
   logo: "",
   badge: "",
   banner: "",
+  name: "Sabores do Sul",
+  address: "",
+  schedule: defaultSchedule(),
 });
 
 /**

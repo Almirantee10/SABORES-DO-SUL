@@ -7,6 +7,12 @@ import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-c
 import type { Cat, StoreData } from "@/lib/store-data";
 import { useCatalog } from "@/components/Catalog";
 import { Thumb } from "@/components/ui";
+const availOf = (p: Product) => (!p.soldOut ? "ok" : p.paused ? "pause" : "out");
+const withAvail = (p: Product, v: string): Product => {
+  const { soldOut: _s, paused: _p, ...rest } = p;
+  void _s; void _p;
+  return v === "ok" ? rest : v === "pause" ? { ...rest, soldOut: true, paused: true } : { ...rest, soldOut: true };
+};
 const newProduct = (cat: string): Product => ({ id: "novo-" + Date.now().toString(36), cat, name: "", desc: "", img: "", price: 0 });
 
 export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
@@ -132,10 +138,11 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                   <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={idx === 0} onClick={() => move(p.id, -1)}><ChevronUp size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={idx === c.items.length - 1} onClick={() => move(p.id, 1)}><ChevronDown size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label={`Duplicar ${p.name}`} title="Duplicar" onClick={() => duplicate(p.id)}><Copy size={16} /></button>
-                  <label className="adm-switch">
-                    <input type="checkbox" checked={!!p.soldOut} onChange={(e) => patch(p.id, (x) => ({ ...x, soldOut: e.target.checked }))} />
-                    <span>Esgotado</span>
-                  </label>
+                  <select aria-label={`Disponibilidade de ${p.name}`} value={availOf(p)} onChange={(e) => patch(p.id, (x) => withAvail(x, e.target.value))}>
+                    <option value="ok">Disponível</option>
+                    <option value="out">Indisponível</option>
+                    <option value="pause">Pausado</option>
+                  </select>
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}><Pencil size={15} /> <span>Editar</span></button>
                 </div>
               </div>
@@ -301,9 +308,14 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
             </label>
           )}
           <label className="adm-f"><span>Selo (opcional)</span><input value={f.badge ?? ""} maxLength={20} placeholder="Ex.: Novo" onChange={(e) => setF({ ...f, badge: e.target.value })} /></label>
-          <label className="adm-switch">
-            <input type="checkbox" checked={!!f.soldOut} onChange={(e) => setF({ ...f, soldOut: e.target.checked })} />
-            <span>Produto esgotado</span>
+          <label className="adm-f">
+            <span>Disponibilidade</span>
+            <select value={availOf(f)} onChange={(e) => setF(withAvail(f, e.target.value))}>
+              <option value="ok">Disponível</option>
+              <option value="out">Indisponível (esgotado)</option>
+              <option value="pause">Pausado temporariamente</option>
+            </select>
+            <small className="adm-note">Indisponível ou pausado: o produto continua no cardápio, mas o cliente não consegue pedir. Volte para Disponível quando quiser.</small>
           </label>
           {err && <p className="adm-err" role="alert">{err}</p>}
           <p className="adm-note">Depois de aplicar, toque em <b>Salvar alterações</b> para publicar no site.</p>

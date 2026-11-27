@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Product } from "@/lib/data";
 import { percentFor, promoState, todayStr, type Promo } from "@/lib/promo";
+import { scheduleOpen } from "@/lib/schedule";
 import { defaultStore, type Cat, type Settings, type StoreData } from "@/lib/store-data";
 
 type Ctx = {
@@ -31,6 +32,15 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [today, setToday] = useState("");
   const last = useRef(0);
+  // inside the weekly schedule? (always true when the schedule is off); rechecked every 30 s
+  const [schedOpen, setSchedOpen] = useState(true);
+  const schedule = data.settings.schedule;
+  useEffect(() => {
+    const check = () => setSchedOpen(scheduleOpen(schedule));
+    check();
+    const t = setInterval(check, 30_000);
+    return () => clearInterval(t);
+  }, [schedule]);
 
   const refresh = useCallback(async () => {
     last.current = Date.now();
@@ -69,7 +79,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       activePromos: (data.promos ?? []).filter((p) => promoState(p, today) === "ativa"),
       promoPct: (pid: string) => percentFor(data.promos ?? [], pid, today),
       byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
-      open: data.open !== false,
+      open: data.open !== false && schedOpen,
       closedMessage: data.closedMessage || "",
       cats: data.cats,
       settings: data.settings,
@@ -77,7 +87,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       refresh,
       apply: (d) => setData((cur) => ({ ...cur, ...d })),
     }),
-    [data, ready, refresh, today],
+    [data, ready, refresh, today, schedOpen],
   );
 
   return <CatalogCtx.Provider value={value}>{children}</CatalogCtx.Provider>;

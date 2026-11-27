@@ -1,6 +1,7 @@
 import { PAY, type Product, type Size } from "@/lib/data";
 import { defaultSettings, type Cat, type Settings, type StoreData } from "@/lib/store-data";
 import type { Promo } from "@/lib/promo";
+import { DAY_NAMES, defaultSchedule, type Schedule } from "@/lib/schedule";
 
 const str = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const num = (v: unknown, min: number, max: number) => {
@@ -58,6 +59,7 @@ function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product 
   const ask = str(r.ask, 60);
   if (ask) out.ask = ask;
   if (r.soldOut === true) out.soldOut = true;
+  if (r.soldOut === true && r.paused === true) out.paused = true; // "temporarily paused": blocked like sold out, with its own label
 
   if (Array.isArray(r.sizes) && r.sizes.length) {
     const sizes = r.sizes.slice(0, 4).map(size);
@@ -185,7 +187,20 @@ export function sanitizeSettings(raw: unknown): { ok: true; settings: Settings }
   const logo = img("logo"), badge = img("badge"), banner = img("banner");
   if (logo === null || badge === null || banner === null) return { ok: false, error: "imagem inválida" };
 
-  const text = (k: keyof Settings, max: number) => str(r[k], max) || (k === "hours" || k === "deliveryNote" ? "" : (d[k] as string));
+  const sc = (r.schedule && typeof r.schedule === "object" ? r.schedule : {}) as Record<string, unknown>;
+  const schedule: Schedule = { on: sc.on === true, days: defaultSchedule().days };
+  if (Array.isArray(sc.days) && sc.days.length === 7) {
+    for (let i = 0; i < 7; i++) {
+      const o = (sc.days[i] && typeof sc.days[i] === "object" ? sc.days[i] : {}) as Record<string, unknown>;
+      const open = str(o.open, 5), close = str(o.close, 5);
+      const closed = o.closed === true;
+      if (!closed && (!/^([01]\d|2[0-3]):[0-5]\d$/.test(open) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(close) || open >= close))
+        return { ok: false, error: `horário de ${DAY_NAMES[i].toLowerCase()} inválido: a abertura precisa ser antes do fechamento` };
+      schedule.days[i] = { closed, open: /^\d{2}:\d{2}$/.test(open) ? open : "08:00", close: /^\d{2}:\d{2}$/.test(close) ? close : "18:00" };
+    }
+  }
+
+  const text = (k: keyof Settings, max: number) => str(r[k], max) || (k === "hours" || k === "deliveryNote" || k === "address" ? "" : (d[k] as string));
   return {
     ok: true,
     settings: {
@@ -202,6 +217,9 @@ export function sanitizeSettings(raw: unknown): { ok: true; settings: Settings }
       ctaTitle: text("ctaTitle", 80),
       ctaText: text("ctaText", 200),
       logo, badge, banner,
+      name: text("name", 60),
+      address: text("address", 160),
+      schedule,
     },
   };
 }

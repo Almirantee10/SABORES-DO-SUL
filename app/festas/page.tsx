@@ -92,7 +92,7 @@ export default function Festas() {
               {promoPct(b.id) > 0 && <span className="promo-tag">-{promoPct(b.id)}% · de {fmt(priceOf(b))}</span>}
               {b.min && b.min > 1 ? <InfoPill label="Pedido mínimo" value={`${b.min} unidades`} /> : null}
               <Button variant="outline" size="sm" disabled={!!b.soldOut || !shopOpen} onClick={() => openSheet(b.id)}>
-                {b.soldOut ? <span>Esgotado</span> : !shopOpen ? <span>Fechado</span> : <><Plus size={16} /> <span>Adicionar</span></>}
+                {b.soldOut ? <span>{b.paused ? "Pausado" : "Esgotado"}</span> : !shopOpen ? <span>Fechado</span> : <><Plus size={16} /> <span>Adicionar</span></>}
               </Button>
             </div>
           ))}

@@ -5,6 +5,7 @@ import { ImagePlus, Save } from "lucide-react";
 import { PAY, waLabel } from "@/lib/data";
 import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-client";
 import { defaultSettings, type Settings, type StoreData } from "@/lib/store-data";
+import { DAY_NAMES } from "@/lib/schedule";
 import { useCatalog } from "@/components/Catalog";
 
 type Msg = { ok: boolean; text: string } | null;
@@ -170,6 +171,32 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
       ) : (
         <>
           <section className="adm-card">
+            <h2>Abrir e fechar sozinha</h2>
+            <label className="adm-switch"><input type="checkbox" checked={f.schedule.on} onChange={(e) => set("schedule", { ...f.schedule, on: e.target.checked })} /><span>Usar horário automático por dia da semana</span></label>
+            {f.schedule.on && (
+              <div className="adm-sched">
+                {f.schedule.days.map((d, i) => {
+                  const put = (patch: Partial<typeof d>) => set("schedule", { ...f.schedule, days: f.schedule.days.map((x, k) => (k === i ? { ...x, ...patch } : x)) });
+                  return (
+                    <div key={i} className={`adm-sched-row${d.closed ? " off" : ""}`}>
+                      <b>{DAY_NAMES[i]}</b>
+                      <label className="adm-switch"><input type="checkbox" checked={d.closed} onChange={(e) => put({ closed: e.target.checked })} /><span>Fechado</span></label>
+                      {!d.closed && (
+                        <span className="adm-sched-t">
+                          <input type="time" aria-label={`${DAY_NAMES[i]}: abre às`} value={d.open} onChange={(e) => put({ open: e.target.value })} />
+                          <i>às</i>
+                          <input type="time" aria-label={`${DAY_NAMES[i]}: fecha às`} value={d.close} onChange={(e) => put({ close: e.target.value })} />
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <p className="adm-note">Com o horário automático ligado, a loja abre e fecha sozinha nos horários acima (hora de Palmas). Se você apertar <b>Fechada</b> em &ldquo;Situação da loja&rdquo;, ela fica fechada mesmo dentro do horário.</p>
+          </section>
+
+          <section className="adm-card">
             <h2>Logo e banner</h2>
             {imageField("logo", "Logo do topo e do rodapé", "Use PNG com fundo transparente, horizontal, de preferência dourada ou clara (o topo é escuro).", "png", "/assets/logo/logo-gold.png")}
             {imageField("badge", "Selo redondo da página inicial", "Imagem quadrada ou redonda; PNG transparente fica melhor.", "png", "/assets/logo/logo-badge-circle.png")}
@@ -183,6 +210,8 @@ export function LojaTab({ onSignedOut }: { onSignedOut: () => void }) {
               <input inputMode="tel" value={f.whatsapp.replace(/^55/, "")} maxLength={20} placeholder="63 99220-2561" onChange={(e) => set("whatsapp", e.target.value)} />
               <small className="adm-note">Com DDD. Aparece como {waLabel(f.whatsapp) || "…"} no site e é para onde o pedido é enviado.</small>
             </label>
+            {text("name", "Nome do estabelecimento", { max: 60 })}
+            {text("address", "Endereço (opcional)", { max: 160, placeholder: "Rua, número, bairro, cidade", hint: "Aparece na página inicial, junto do contato." })}
             {text("instagram", "Instagram (só o nome de usuário)", { max: 80, placeholder: "saboresdosulpalmas", hint: "Deixe em branco para esconder o link." })}
             {text("tagline", "Frase de apresentação", { max: 80 })}
             <div className="adm-f">

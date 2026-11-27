@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Download, FileSpreadsheet, FileText, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Columns3, Download, FileSpreadsheet, FileText, List, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react";
+import { useCatalog } from "@/components/Catalog";
 import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
@@ -198,6 +199,16 @@ function Kpi({ label, value, hint }: { label: string; value: string; hint?: stri
 
 function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: string; s: ReturnType<typeof summary> }) {
   const days = byDay(orders, from, to);
+  const { byId, cats } = useCatalog();
+  const live = orders.filter((o) => o.status !== "cancelado");
+  const items = byItem(live);
+  // revenue per category (a product that no longer exists counts as "Outros")
+  const rev: Record<string, number> = {};
+  for (const o of live) for (const i of o.items) {
+    const c = cats.find((x) => x.id === byId[i.pid]?.cat)?.title ?? "Outros";
+    rev[c] = (rev[c] ?? 0) + i.qty * i.price;
+  }
+  const byCat = Object.entries(rev).sort((a, b) => b[1] - a[1]).map(([label, value]) => ({ label, value }));
   return (
     <>
       <div className="kpis">
@@ -213,6 +224,8 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
       </section>
       <div className="adm-grid2">
         <section className="adm-card"><h2>Itens mais vendidos</h2><HBars data={byItem(orders).slice(0, 8).map((i) => ({ label: i.name, value: i.revenue, sub: `${i.qty} un.` }))} /></section>
+        <section className="adm-card"><h2>Itens menos vendidos</h2><HBars data={[...items].reverse().slice(0, 8).map((i) => ({ label: i.name, value: i.revenue, sub: `${i.qty} un.` }))} /></section>
+        <section className="adm-card"><h2>Receita por categoria</h2><HBars data={byCat} /></section>
         <section className="adm-card"><h2>Situação dos pedidos</h2><Donut data={tally(orders, (o) => statusLabel(o.status))} /></section>
         <section className="adm-card"><h2>Retirada ou entrega</h2><Donut data={tally(orders, (o) => (o.delivery === "entrega" ? "Entrega" : "Retirada"))} /></section>
         <section className="adm-card"><h2>Forma de pagamento</h2><Donut data={tally(orders, (o) => payLabel(o.pay))} /></section>
@@ -225,6 +238,7 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
 function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void }) {
   const [status, setStatus] = useState<OrderStatus | "todos">("todos");
   const [q, setQ] = useState("");
+  const [board, setBoard] = useState(false);
   const list = orders.filter((o) => (status === "todos" || o.status === status) && (!q.trim() || (o.name + " " + o.phone + " " + o.id).toLowerCase().includes(q.trim().toLowerCase())));
   return (
     <>
@@ -238,11 +252,41 @@ function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string,
         <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nome, telefone ou nº" aria-label="Buscar pedido" /></label>
       </div>
       <div className="crm-actions">
+        <div className="adm-seg" role="group" aria-label="Forma de exibir">
+          <button className={!board ? "on open" : ""} onClick={() => setBoard(false)}><List size={15} /> Lista</button>
+          <button className={board ? "on open" : ""} onClick={() => setBoard(true)}><Columns3 size={15} /> Kanban</button>
+        </div>
         <button className="btn btn-outline btn-sm" onClick={() => downloadCsv("pedidos", CSV.pedidos(list))}><Download size={15} /> <span>Exportar pedidos</span></button>
         <button className="btn btn-outline btn-sm" onClick={() => downloadCsv("pedidos-itens", CSV.linhas(list))}><Download size={15} /> <span>Exportar itens dos pedidos</span></button>
       </div>
       {list.length === 0 && <p className="adm-note">Nenhum pedido neste filtro.</p>}
-      {list.map((o) => (
+      {board && list.length > 0 && (
+        <div className="kanban">
+          {STATUS.map((st, si) => {
+            const col = list.filter((o) => o.status === st.id);
+            return (
+              <section key={st.id} className={`kan-col st-${st.id}`}>
+                <h3>{st.label} <em>{col.length}</em></h3>
+                {col.length === 0 && <p className="adm-note">Vazio</p>}
+                {col.map((o) => (
+                  <article key={o.id} className="kan-card">
+                    <header><b>{num(o.id)}</b><strong>{fmt(o.total)}</strong></header>
+                    <p className="kan-who">{o.name}</p>
+                    <p className="kan-sub">{o.delivery === "entrega" ? "Entrega" : "Retirada"} · {fmtDate(o.date)} {o.time}</p>
+                    <p className="kan-items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
+                    <footer>
+                      <button className="iconbtn iconbtn-ghost" aria-label="Voltar etapa" disabled={si === 0 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si - 1].id)}><ChevronLeft size={18} /></button>
+                      {o.phone && <a className="iconbtn iconbtn-ghost" aria-label="Chamar no WhatsApp" href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /></a>}
+                      <button className="iconbtn iconbtn-ghost" aria-label="Avançar etapa" disabled={si >= STATUS.length - 2 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si + 1].id)}><ChevronRight size={18} /></button>
+                    </footer>
+                  </article>
+                ))}
+              </section>
+            );
+          })}
+        </div>
+      )}
+      {!board && list.map((o) => (
         <article key={o.id} className={`ord st-${o.status}`}>
           <header>
             <div><b>{num(o.id)}</b><small>{stamp(o.createdAt)}</small></div>

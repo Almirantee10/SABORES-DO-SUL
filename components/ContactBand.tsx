@@ -26,6 +26,7 @@ export function ContactBand() {
     <section className="contact-band">
       <div className="mh-sub">{settings.tagline}</div>
       {settings.hours && <div className="mh-sub" style={{ marginTop: -6 }}>{settings.hours}</div>}
+      {settings.address && <div className="mh-sub" style={{ marginTop: -6 }}>{settings.address}</div>}
       <div className="mh-contact">
         <span className="mh-wa"><WhatsAppIcon size={18} color="var(--sds-whatsapp)" /><small>WhatsApp</small><b>{WA_LABEL}</b></span>
         <button type="button" className="btn btn-outline btn-sm" onClick={copy}>{copied ? <Check size={15} /> : <Copy size={15} />} <span>{copied ? "Copiado" : "Copiar número"}</span></button>

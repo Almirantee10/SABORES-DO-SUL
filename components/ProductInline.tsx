@@ -49,13 +49,13 @@ export function ProductInline({ p }: { p: Product }) {
 
   const hint = single ? "Escolha 1 sabor" : `Escolha até ${max} sabores (pode ser só 1)`;
   const count = single ? "Escolha 1" : `Escolha de 1 a ${max}`;
-  const label = p.soldOut ? "Esgotado" : !shopOpen ? "Fechado no momento" : !ready ? "Carregando…" : `Adicionar ao pedido · ${fmt(unit * qty)}`;
+  const label = p.soldOut ? (p.paused ? "Pausado no momento" : "Esgotado") : !shopOpen ? "Fechado no momento" : !ready ? "Carregando…" : `Adicionar ao pedido · ${fmt(unit * qty)}`;
 
   return (
     <article className={`pi${p.soldOut ? " is-soldout" : ""}`}>
       <header className="pi-head">
         <div className="pi-txt">
-          <h3>{p.name}{p.badge ? <Badge>{p.badge}</Badge> : null}{pct && !p.soldOut ? <span className="promo-tag">-{pct}%</span> : null}{p.soldOut ? <span className="soldout-tag">Esgotado</span> : null}</h3>
+          <h3>{p.name}{p.badge ? <Badge>{p.badge}</Badge> : null}{pct && !p.soldOut ? <span className="promo-tag">-{pct}%</span> : null}{p.soldOut ? <span className="soldout-tag">{p.paused ? "Pausado" : "Esgotado"}</span> : null}</h3>
           <p>{p.desc}</p>
         </div>
         <Thumb src={p.img} icon={44} className="pi-ring" />
