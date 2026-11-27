@@ -1,4 +1,4 @@
-﻿export const WA = "5563992202561";
+export const WA = "5563992202561";
 export const WA_LABEL = "63 99220-2561";
 export const IG_URL = "https://www.instagram.com/saboresdosulpalmas/";
 
@@ -29,6 +29,8 @@ export type Product = {
   ask?: string;
   /** out of stock: still listed, but cannot be ordered */
   soldOut?: boolean;
+  /** promotion for this product alone, in percent (1-90); the biggest of this and a running promotion applies */
+  salePct?: number;
   /** shown in the "Destaques" strip on the home page and at the top of the menu */
   featured?: boolean;
   /** with soldOut: paused for a while, shown as "Pausado" instead of "Esgotado" */

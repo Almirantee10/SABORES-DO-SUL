@@ -73,6 +73,7 @@ export function Header() {
 
 /* ------------------------------------------------------------------ Footer */
 export function Footer() {
+  const { settings } = useCatalog();
   return (
     <footer className="footer">
       <div className="footer-in">
@@ -81,6 +82,7 @@ export function Footer() {
           {PAGES.map((p) => <Link key={p.href} href={p.href}>{p.label}</Link>)}
         </div>
         <div className="footer-tag">Qualidade e sabor<br />que fazem a diferença!</div>
+        {(settings.name || settings.address) && <div className="footer-addr">{settings.name}{settings.address ? ` · ${settings.address}` : ""}</div>}
       </div>
       <div className="footer-end">
         <Link href="/admin" className="footer-admin-btn">Área restrita</Link>

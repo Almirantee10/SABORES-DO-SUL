@@ -77,7 +77,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       products: data.products,
       promos: data.promos ?? [],
       activePromos: (data.promos ?? []).filter((p) => promoState(p, today) === "ativa"),
-      promoPct: (pid: string) => percentFor(data.promos ?? [], pid, today),
+      promoPct: (pid: string) => Math.max(percentFor(data.promos ?? [], pid, today), data.products.find((p) => p.id === pid)?.salePct ?? 0),
       byId: Object.fromEntries(data.products.map((p) => [p.id, p])),
       open: data.open !== false && schedOpen,
       closedMessage: data.closedMessage || "",

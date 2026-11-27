@@ -177,6 +177,7 @@ export function sanitizeOrder(raw: unknown, settings: Settings): { ok: true; ord
       pct: Math.round(pct),
       flavors: Array.isArray(i.flavors) ? i.flavors.map((f) => text(f, 60)).filter(Boolean).slice(0, 20) : [],
       extras: Array.isArray(i.extras) ? i.extras.slice(0, 20).map((e) => { const o = (e && typeof e === "object" ? e : {}) as Record<string, unknown>; return { name: text(o.name, 60), price: num(o.price, 0, 9999) ?? 0 }; }).filter((e) => e.name) : [],
+      ...(num(i.orig, 0, 99999) !== null && (num(i.orig, 0, 99999) as number) > price ? { orig: Math.round((num(i.orig, 0, 99999) as number) * 100) / 100 } : {}),
       obs: text(i.obs, 200),
     });
   }

@@ -15,7 +15,8 @@ const withAvail = (p: Product, v: string): Product => {
 };
 const newProduct = (cat: string): Product => ({ id: "novo-" + Date.now().toString(36), cat, name: "", desc: "", img: "", price: 0 });
 
-export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
+export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" | "adicionais"; onSignedOut: () => void }) {
+  const extrasMode = mode === "adicionais";
   const catalog = useCatalog();
   const [draft, setDraft] = useState<Product[] | null>(null);
   const [savedJson, setSavedJson] = useState("");
@@ -87,6 +88,20 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
       [n[i], n[j]] = [n[j], n[i]];
       return n;
     });
+  /** puts a product at a typed position (1 = first) inside its category */
+  const moveTo = (id: string, pos: number) =>
+    setDraft((d) => {
+      if (!d || !Number.isFinite(pos)) return d;
+      const me = d.find((p) => p.id === id);
+      if (!me) return d;
+      const mates = d.filter((p) => p.cat === me.cat && p.id !== id);
+      const at = Math.max(0, Math.min(mates.length, Math.round(pos) - 1));
+      mates.splice(at, 0, me);
+      const slots = d.map((p, i) => (p.cat === me.cat ? i : -1)).filter((i) => i >= 0);
+      const n = d.slice();
+      slots.forEach((slot, k) => { n[slot] = mates[k]; });
+      return n;
+    });
   const duplicate = (id: string) =>
     setDraft((d) => {
       if (!d) return d;
@@ -99,7 +114,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
 
   return (
     <div className="adm-pane">
-      <p className="adm-note">Mude valores, marque esgotados, duplique, reordene e adicione produtos. Para abrir ou fechar a loja, use a aba Loja.</p>
+      <p className="adm-note">{extrasMode ? "Escolha o produto e toque em Editar para criar ou mudar os grupos de adicionais e complementos dele (molhos, acompanhamentos, extras)." : "Mude valores, marque indisponíveis, destaque, duplique, reordene e adicione produtos. Para abrir ou fechar a loja, use a aba Configurações."}</p>
 
       {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
 
@@ -110,7 +125,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
           <section key={c.id} className="adm-card">
             <div className="adm-cat">
               <h2>{c.title}</h2>
-              <button className="btn btn-outline btn-sm" onClick={() => setEditing(newProduct(c.id))}><Plus size={16} /> <span>Adicionar produto</span></button>
+              {!extrasMode && <button className="btn btn-outline btn-sm" onClick={() => setEditing(newProduct(c.id))}><Plus size={16} /> <span>Adicionar produto</span></button>}
             </div>
             {c.items.length === 0 && <p className="adm-note">Nenhum produto nesta categoria.</p>}
             {c.items.map((p, idx) => (
@@ -118,7 +133,8 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                 <Thumb src={p.img} size={56} icon={24} />
                 <div className="adm-info">
                   <b>{p.name || "(sem nome)"}</b>
-                  <div className="adm-prices">
+                  {extrasMode && <small className="adm-note">{p.extras?.length ? p.extras.map((g) => `${g.name} (${g.options.length}${g.min ? ", obrigatório" : ""})`).join(" · ") : "Sem adicionais"}</small>}
+                  <div className="adm-prices" hidden={extrasMode}>
                     {p.sizes
                       ? p.sizes.map((s, i) => (
                           <label key={s.id}>
@@ -135,6 +151,8 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                   </div>
                 </div>
                 <div className="adm-actions">
+                  {extrasMode ? null : <>
+                  <input key={`${p.id}-${idx}`} className="adm-pos" inputMode="numeric" aria-label={`Posição de ${p.name}`} title="Posição na categoria" defaultValue={idx + 1} onBlur={(e) => moveTo(p.id, Number(e.target.value))} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
                   <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={idx === 0} onClick={() => move(p.id, -1)}><ChevronUp size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={idx === c.items.length - 1} onClick={() => move(p.id, 1)}><ChevronDown size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label={`Duplicar ${p.name}`} title="Duplicar" onClick={() => duplicate(p.id)}><Copy size={16} /></button>
@@ -144,6 +162,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                     <option value="out">Indisponível</option>
                     <option value="pause">Pausado</option>
                   </select>
+                  </>}
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}><Pencil size={15} /> <span>Editar</span></button>
                 </div>
               </div>
@@ -336,6 +355,15 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
             </div>
           )}
 
+          <label className="adm-f">
+            <span>Promoção só deste produto (% de desconto, opcional)</span>
+            <input inputMode="numeric" value={f.salePct ?? ""} placeholder="Ex.: 10" onChange={(e) => setF({ ...f, salePct: Math.min(90, Number(e.target.value.replace(/\D/g, "")) || 0) || undefined })} />
+            <small className="adm-note">
+              {f.salePct
+                ? `Preço com desconto: ${(hasSizes ? f.sizes!.map((s) => `${s.label} ${fmt(Math.round(s.price * (100 - f.salePct!)) / 100)}`).join(" · ") : fmt(Math.round((f.price ?? 0) * (100 - f.salePct)) / 100))}. Aparece no cardápio e em Destaques, com o selo -${f.salePct}%.`
+                : "Deixe em branco para não ter desconto. Se houver uma promoção em Promoções, vale o maior desconto."}
+            </small>
+          </label>
           <label className="adm-f">
             <span>Sabores (um por linha, opcional)</span>
             <textarea rows={4} value={flavorsText} onChange={(e) => setFlavorsText(e.target.value)} placeholder={"Ex.:\nChocolate\nMorango"} />

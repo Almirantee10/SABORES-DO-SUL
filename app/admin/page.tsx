@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { BarChart3, KeyRound, LayoutList, Lock, LogOut, Store, Tag, UtensilsCrossed } from "lucide-react";
+import { BarChart3, ClipboardList, FileText, KeyRound, LayoutDashboard, LayoutList, ListPlus, Lock, LogOut, Settings, Tag, Users, UtensilsCrossed } from "lucide-react";
 import { api, ApiError } from "@/lib/admin-client";
 import { AccessTab } from "./AccessTab";
 import { CatsTab } from "./CatsTab";
-import { CrmTab } from "./CrmTab";
+import { CrmTab, type CrmView } from "./CrmTab";
 import { LojaTab } from "./LojaTab";
 import { MenuTab } from "./MenuTab";
 import { PromoTab } from "./PromoTab";
@@ -82,17 +82,21 @@ function Login({ onDone }: { onDone: () => void }) {
 
 /* ------------------------------------------------------------- the areas */
 const AREAS = [
-  { id: "crm", label: "Pedidos e CRM", Icon: BarChart3 },
-  { id: "cardapio", label: "Cardápio", Icon: UtensilsCrossed },
+  { id: "dashboard", label: "Dashboard", Icon: LayoutDashboard },
+  { id: "pedidos", label: "Pedidos", Icon: ClipboardList },
+  { id: "clientes", label: "Clientes", Icon: Users },
+  { id: "produtos", label: "Produtos", Icon: UtensilsCrossed },
   { id: "categorias", label: "Categorias", Icon: LayoutList },
+  { id: "adicionais", label: "Adicionais", Icon: ListPlus },
   { id: "promocoes", label: "Promoções", Icon: Tag },
-  { id: "loja", label: "Loja", Icon: Store },
+  { id: "faturamento", label: "Faturamento", Icon: BarChart3 },
+  { id: "relatorios", label: "Relatórios", Icon: FileText },
+  { id: "configuracoes", label: "Configurações", Icon: Settings },
   { id: "acesso", label: "Acesso", Icon: KeyRound },
-] as const;
-type Area = (typeof AREAS)[number]["id"];
+] as const;type Area = (typeof AREAS)[number]["id"];
 
 function Shell({ user, onSignedOut }: { user: string; onSignedOut: () => void }) {
-  const [area, setArea] = useState<Area>("crm");
+  const [area, setArea] = useState<Area>("dashboard");
 
   const signOut = async () => {
     try { await api("/api/admin/logout", "POST", {}); } catch {}
@@ -114,12 +118,12 @@ function Shell({ user, onSignedOut }: { user: string; onSignedOut: () => void })
         ))}
       </nav>
 
-      {area === "crm" && <CrmTab onSignedOut={onSignedOut} />}
-      {area === "cardapio" && <MenuTab onSignedOut={onSignedOut} />}
+      {(area === "dashboard" || area === "pedidos" || area === "clientes" || area === "faturamento" || area === "relatorios") && <CrmTab key={area} view={area as CrmView} onSignedOut={onSignedOut} />}
+      {area === "produtos" && <MenuTab onSignedOut={onSignedOut} />}
+      {area === "adicionais" && <MenuTab mode="adicionais" onSignedOut={onSignedOut} />}
       {area === "categorias" && <CatsTab onSignedOut={onSignedOut} />}
       {area === "promocoes" && <PromoTab onSignedOut={onSignedOut} />}
-      {area === "loja" && <LojaTab onSignedOut={onSignedOut} />}
-      {area === "acesso" && <AccessTab user={user} onChanged={() => void 0} onSignedOut={onSignedOut} />}
+      {area === "configuracoes" && <LojaTab onSignedOut={onSignedOut} />}      {area === "acesso" && <AccessTab user={user} onChanged={() => void 0} onSignedOut={onSignedOut} />}
     </div>
   );
 }

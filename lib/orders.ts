@@ -22,6 +22,8 @@ export type OrderItem = {
   /** promotion discount applied to this line, in percent (0 = none) */
   pct: number;
   flavors: string[];
+  /** unit price before the promotion (extras included); only when a promotion was applied */
+  orig?: number;
   /** extras picked by the customer; the unit price already includes them */
   extras?: { name: string; price: number }[];
   obs: string;
@@ -148,7 +150,15 @@ const money = (n: number) => n.toFixed(2).replace(".", ",");
 const when = (iso: string) => new Date(iso).toLocaleString("pt-BR");
 const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ? " (" + i.size + ")" : ""}${i.flavors.length ? " [" + i.flavors.join(", ") + "]" : ""}${i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""}`).join(" | ");
 
+/** value of the products before any promotion, and what the promotions took off */
+export const grossOf = (o: Order) => o.items.reduce((a, i) => a + i.qty * (i.orig && i.orig > i.price ? i.orig : i.price), 0);
+export const discountOf = (o: Order) => o.items.reduce((a, i) => a + (i.orig && i.orig > i.price ? i.qty * (i.orig - i.price) : 0), 0);
+
 export const CSV = {
+  vendas: (orders: Order[]) => [
+    ["Pedido", "Data e horário", "Cliente", "Produtos vendidos", "Quantidade", "Adicionais", "Valor dos produtos (R$)", "Descontos (R$)", "Taxa de entrega (R$)", "Total (R$)", "Forma de pagamento", "Status do pagamento", "Status do pedido"],
+    ...orders.map((o) => [o.id, when(o.createdAt), o.name, itemText(o), o.items.reduce((a, i) => a + i.qty, 0), o.items.flatMap((i) => (i.extras ?? []).map((e) => e.name)).join(", "), money(grossOf(o)), money(discountOf(o)), money(o.fee ?? 0), money(o.total), payLabel(o.pay), payState(o), statusLabel(o.status)]),
+  ],
   pedidos: (orders: Order[]) => [
     ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Recebimento", "Data", "Horário", "Endereço", "Mapa", "Pagamento", "Itens", "Total (R$)"],
     ...orders.map((o) => [o.id, when(o.createdAt), statusLabel(o.status), o.name, o.phone, o.delivery === "entrega" ? "Entrega" : "Retirada", fmtDate(o.date), o.time, o.address, o.mapLink, payLabel(o.pay) + " - " + payState(o), itemText(o), money(o.total)]),

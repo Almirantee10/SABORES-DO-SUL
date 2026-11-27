@@ -7,16 +7,10 @@ import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
 import { todayStr } from "@/lib/promo";
-import { STATUS, payState, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
+import { STATUS, payState, grossOf, discountOf, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
 import { BarChart, Donut, HBars } from "./charts";
 
-type View = "resumo" | "pedidos" | "clientes" | "itens";
-const VIEWS: { id: View; label: string }[] = [
-  { id: "resumo", label: "Resumo" },
-  { id: "pedidos", label: "Pedidos" },
-  { id: "clientes", label: "Clientes" },
-  { id: "itens", label: "Itens" },
-];
+export type CrmView = "dashboard" | "pedidos" | "clientes" | "faturamento" | "relatorios";
 const PERIODS = [
   { id: "hoje", label: "Hoje" },
   { id: "7", label: "7 dias" },
@@ -36,12 +30,11 @@ const stamp = (iso: string) => new Date(iso).toLocaleString("pt-BR", { day: "2-d
 const num = (id: string) => "#" + id.slice(8).toUpperCase();
 const digits = (s: string) => s.replace(/\D/g, "");
 
-export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
+export function CrmTab({ view, onSignedOut }: { view: CrmView; onSignedOut: () => void }) {
   const [orders, setOrders] = useState<Order[] | null>(null);
   const [configured, setConfigured] = useState(true);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
-  const [view, setView] = useState<View>("resumo");
   const [period, setPeriod] = useState<(typeof PERIODS)[number]["id"]>("30");
 
   const load = useCallback(async () => {
@@ -160,32 +153,29 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
     );
 
   const s = summary(inPeriod);
-  const newCount = (orders ?? []).filter((o) => o.status === "novo").length;
 
   return (
     <div className="adm-pane">
-      <div className="crm-bar">
-        <div className="adm-seg4" role="tablist">
-          {VIEWS.map((v) => (
-            <button key={v.id} role="tab" aria-selected={view === v.id} className={view === v.id ? "on" : ""} onClick={() => setView(v.id)}>
-              {v.label}{v.id === "pedidos" && newCount > 0 ? <em className="dot">{newCount}</em> : null}
-            </button>
-          ))}
+      {view !== "dashboard" && (
+        <div className="crm-bar">
+          <div className="crm-period">
+            <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)} aria-label="Período">
+              {PERIODS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+            <label className="crm-date"><span>De</span><input type="date" value={from} max={todayStr()} onChange={(e) => e.target.value && pickFrom(e.target.value)} /></label>
+            <label className="crm-date"><span>Até</span><input type="date" value={to} max={todayStr()} onChange={(e) => e.target.value && pickTo(e.target.value)} /></label>
+            <button className="btn btn-ghost btn-sm" onClick={load} disabled={busy} aria-label="Atualizar"><RefreshCw size={15} className={busy ? "spin" : ""} /> <span>Atualizar</span></button>
+          </div>
         </div>
-        <div className="crm-period">
-          <select value={period} onChange={(e) => setPeriod(e.target.value as typeof period)} aria-label="Período">
-            {PERIODS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
-          </select>
-          <label className="crm-date"><span>De</span><input type="date" value={from} max={todayStr()} onChange={(e) => e.target.value && pickFrom(e.target.value)} /></label>
-          <label className="crm-date"><span>Até</span><input type="date" value={to} max={todayStr()} onChange={(e) => e.target.value && pickTo(e.target.value)} /></label>
-          <button className="btn btn-ghost btn-sm" onClick={load} disabled={busy} aria-label="Atualizar"><RefreshCw size={15} className={busy ? "spin" : ""} /> <span>Atualizar</span></button>
-        </div>
-      </div>
-      <p className="adm-note">{period === "tudo" ? "Todo o histórico" : `${fmtDate(from)} até ${fmtDate(to)}`} · {inPeriod.length} pedido(s) no período</p>
+      )}
+      {view === "dashboard" && (
+        <div className="crm-bar"><button className="btn btn-ghost btn-sm" onClick={load} disabled={busy} aria-label="Atualizar"><RefreshCw size={15} className={busy ? "spin" : ""} /> <span>Atualizar</span></button></div>
+      )}
+      {view !== "dashboard" && <p className="adm-note">{period === "tudo" ? "Todo o histórico" : `${fmtDate(from)} até ${fmtDate(to)}`} · {inPeriod.length} pedido(s) no período</p>}
       {err && <p className="adm-err" role="alert">{err}</p>}
       {orders === null ? <p className="adm-note">Carregando pedidos…</p> : null}
 
-      {orders !== null && (
+      {orders !== null && view === "relatorios" && (
         <section className="adm-card export" aria-label="Exportar relatório">
           <div>
             <h2>Exportar relatório</h2>
@@ -200,10 +190,10 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
         </section>
       )}
 
-      {orders !== null && view === "resumo" && <Resumo orders={inPeriod} from={from} to={to} s={s} />}
-      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} onRepeat={repeat} />}
+      {orders !== null && view === "dashboard" && <Dashboard orders={orders} />}
+      {orders !== null && view === "faturamento" && <><Quick orders={orders} /><Resumo orders={inPeriod} from={from} to={to} s={s} /></>}
+      {orders !== null && view === "relatorios" && <><Itens orders={inPeriod} /><Vendas orders={inPeriod} /></>}      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} onRepeat={repeat} />}
       {orders !== null && view === "clientes" && <Clientes orders={inPeriod} />}
-      {orders !== null && view === "itens" && <Itens orders={inPeriod} />}
     </div>
   );
 }
@@ -421,5 +411,99 @@ function Itens({ orders }: { orders: Order[] }) {
         </section>
       )}
     </>
+  );
+}
+
+/* ---------------------------------------------------------------- dashboard */
+function Dashboard({ orders }: { orders: Order[] }) {
+  const { open, cats, byId } = useCatalog();
+  const today = todayStr();
+  const mine = orders.filter((o) => orderDay(o.createdAt) === today);
+  const s = summary(mine);
+  const active = orders.filter((o) => o.status === "novo" || o.status === "preparo" || o.status === "pronto").length;
+  const done = mine.filter((o) => o.status === "concluido").length;
+  const first = new Map<string, string>();
+  for (const o of [...orders].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) if (!first.has(custKey(o))) first.set(custKey(o), orderDay(o.createdAt));
+  const fresh = [...new Set(mine.filter(counts).map(custKey))].filter((k) => first.get(k) === today).length;
+  const rev: Record<string, number> = {};
+  for (const o of mine.filter(counts)) for (const i of o.items) {
+    const c = cats.find((x) => x.id === byId[i.pid]?.cat)?.title ?? "Outros";
+    rev[c] = (rev[c] ?? 0) + i.qty * i.price;
+  }
+  const novos = orders.filter((o) => o.status === "novo").slice(0, 5);
+  return (
+    <>
+      <div className="kpis">
+        <div className="kpi"><small>Loja</small><b style={{ color: open ? "#8fe0a0" : "#e08a7f" }}>{open ? "● Aberta" : "● Fechada"}</b></div>
+        <Kpi label="Pedidos hoje" value={String(s.orders)} hint={s.cancelled ? `${s.cancelled} cancelado(s)` : undefined} />
+        <Kpi label="Em andamento" value={String(active)} hint="novo, em preparo ou pronto" />
+        <Kpi label="Concluídos hoje" value={String(done)} />
+        <Kpi label="Faturamento do dia" value={fmt(s.revenue)} />
+        <Kpi label="Ticket médio" value={fmt(s.ticket)} />
+        <Kpi label="Clientes novos hoje" value={String(fresh)} />
+      </div>
+      <div className="adm-grid2">
+        <section className="adm-card"><h2>Mais vendidos hoje</h2><HBars data={byItem(mine).slice(0, 6).map((i) => ({ label: i.name, value: i.revenue, sub: `${i.qty} un.` }))} /></section>
+        <section className="adm-card"><h2>Pedidos de hoje por situação</h2><Donut data={tally(mine, (o) => statusLabel(o.status))} /></section>
+      </div>
+      <section className="adm-card">
+        <h2>Pedidos novos aguardando</h2>
+        {novos.length === 0 && <p className="adm-note">Nenhum pedido novo no momento.</p>}
+        {novos.map((o) => (
+          <p key={o.id} className="adm-note"><b>{num(o.id)}</b> · {o.name} · {fmt(o.total)} · {stamp(o.createdAt)}</p>
+        ))}
+        <p className="adm-note">Abra a aba Pedidos para mudar a situação.</p>
+      </section>
+    </>
+  );
+}
+
+/* ----------------------------------------------- faturamento: dia, semana, mês */
+function Quick({ orders }: { orders: Order[] }) {
+  const today = todayStr();
+  const range = (from: string) => summary(orders.filter((o) => orderDay(o.createdAt) >= from && orderDay(o.createdAt) <= today));
+  const d = range(today), w = range(dayBack(6)), m = range(today.slice(0, 8) + "01");
+  return (
+    <div className="kpis">
+      <Kpi label="Faturamento de hoje" value={fmt(d.revenue)} hint={`${d.orders} pedido(s)`} />
+      <Kpi label="Últimos 7 dias" value={fmt(w.revenue)} hint={`${w.orders} pedido(s)`} />
+      <Kpi label="Este mês" value={fmt(m.revenue)} hint={`${m.orders} pedido(s)`} />
+    </div>
+  );
+}
+
+/* ----------------------------------------------------- histórico de vendas */
+function Vendas({ orders }: { orders: Order[] }) {
+  return (
+    <section className="adm-card">
+      <div className="adm-cat">
+        <h2>Histórico de vendas</h2>
+        <button className="btn btn-outline btn-sm" disabled={!orders.length} onClick={() => downloadCsv("vendas", CSV.vendas(orders))}><Download size={15} /> <span>Exportar vendas</span></button>
+      </div>
+      {orders.length === 0 && <p className="adm-note">Sem vendas no período.</p>}
+      {orders.length > 0 && (
+        <div className="tbl-wrap">
+          <table className="tbl">
+            <thead><tr><th>Pedido</th><th>Data</th><th>Cliente</th><th>Produtos</th><th>Valor</th><th>Desc.</th><th>Taxa</th><th>Total</th><th>Pagamento</th><th>Situação</th></tr></thead>
+            <tbody>
+              {orders.map((o) => (
+                <tr key={o.id} className={o.status === "cancelado" ? "off" : ""}>
+                  <td>{num(o.id)}</td>
+                  <td>{stamp(o.createdAt)}</td>
+                  <td>{o.name}</td>
+                  <td>{o.items.map((i) => `${i.qty}× ${i.name}${i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""}`).join("; ")}</td>
+                  <td>{fmt(grossOf(o))}</td>
+                  <td>{discountOf(o) ? "-" + fmt(discountOf(o)) : "–"}</td>
+                  <td>{o.fee ? fmt(o.fee) : "–"}</td>
+                  <td><b>{fmt(o.total)}</b></td>
+                  <td>{payLabel(o.pay)} · {payState(o)}</td>
+                  <td>{statusLabel(o.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
