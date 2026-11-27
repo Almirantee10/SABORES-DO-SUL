@@ -1,4 +1,4 @@
-import { get, put } from "@vercel/blob";
+import { list as listBlobs, put } from "@vercel/blob";
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
 import { promises as fs } from "node:fs";
 import path from "node:path";
@@ -38,9 +38,16 @@ const monthOf = (ms = Date.now()) => new Date(ms - 3 * 3600_000).toISOString().s
 /** A missing month is empty. Anything else that goes wrong throws, so a wrong key can never overwrite saved orders. */
 async function readMonth(k: string): Promise<{ orders: Order[]; etag?: string }> {
   if (hasBlob()) {
-    const r = await get(`orders/${k}.dat`, { access: "public", useCache: false });
-    if (!r || r.statusCode !== 200) return { orders: [] };
-    return { orders: JSON.parse(unseal(await new Response(r.stream).text())), etag: r.blob.etag };
+    // `useCache: false` only works for private stores: a public read can come from the CDN with an old ETag (and old orders),
+    // which made every write fail with "ETag mismatch". The list call goes to the storage API, so its ETag is current;
+    // putting that ETag in the URL gives this exact version its own cache entry.
+    const path = `orders/${k}.dat`;
+    const { blobs } = await listBlobs({ prefix: path, limit: 5 });
+    const b = blobs.find((x) => x.pathname === path);
+    if (!b) return { orders: [] };
+    const res = await fetch(`${b.url}?v=${encodeURIComponent(b.etag)}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`pedidos: leitura falhou (${res.status})`);
+    return { orders: JSON.parse(unseal(await res.text())), etag: b.etag };
   }
   try {
     return { orders: JSON.parse(unseal(await fs.readFile(local(k), "utf8"))) };
