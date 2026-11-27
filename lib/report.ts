@@ -1,5 +1,5 @@
 import { fmt, fmtDate } from "@/lib/data";
-import { byCustomer, byDay, byItem, payLabel, statusLabel, summary, tally, type Order } from "@/lib/orders";
+import { byCustomer, byDay, byItem, payLabel, payState, statusLabel, summary, tally, type Order } from "@/lib/orders";
 
 /* Report exports: a formatted Excel workbook and a printable page (save it as PDF). */
 
@@ -35,6 +35,8 @@ export async function downloadXlsx(orders: Order[], from: string, to: string) {
           [],
           [head("Indicador"), head("Valor")],
           ["Faturamento", money(s.revenue)],
+          ["Recebido (pago)", money(s.received)],
+          ["A receber", money(s.toReceive)],
           ["Pedidos (sem cancelados)", int(s.orders)],
           ["Pedidos cancelados", int(s.cancelled)],
           ["Ticket médio", money(s.ticket)],
@@ -63,7 +65,7 @@ export async function downloadXlsx(orders: Order[], from: string, to: string) {
         stickyRowsCount: 1,
         data: [
           ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Recebimento", "Data", "Horário", "Endereço", "Mapa", "Pagamento", "Itens", "Total"].map(head),
-          ...sorted.map((o) => [orderNo(o.id), stamp(o.createdAt), statusLabel(o.status), o.name, o.phone, o.delivery === "entrega" ? "Entrega" : "Retirada", fmtDate(o.date), o.time, o.address, o.mapLink, payLabel(o.pay), itemText(o), money(o.total)]),
+          ...sorted.map((o) => [orderNo(o.id), stamp(o.createdAt), statusLabel(o.status), o.name, o.phone, o.delivery === "entrega" ? "Entrega" : "Retirada", fmtDate(o.date), o.time, o.address, o.mapLink, payLabel(o.pay) + " - " + payState(o), itemText(o), money(o.total)]),
         ],
       },
       {
@@ -140,6 +142,8 @@ export function reportHtml(orders: Order[], from: string, to: string) {
 <p>Período: ${esc(fmtDate(from))} até ${esc(fmtDate(to))} · gerado em ${esc(new Date().toLocaleString("pt-BR"))}</p>
 <div class="kpis">
   <div class="kpi"><small>Faturamento</small><b>${esc(fmt(s.revenue))}</b></div>
+  <div class="kpi"><small>Recebido</small><b>${esc(fmt(s.received))}</b></div>
+  <div class="kpi"><small>A receber</small><b>${esc(fmt(s.toReceive))}</b></div>
   <div class="kpi"><small>Pedidos</small><b>${s.orders}</b></div>
   <div class="kpi"><small>Ticket médio</small><b>${esc(fmt(s.ticket))}</b></div>
   <div class="kpi"><small>Clientes</small><b>${s.customers}</b></div>
@@ -153,7 +157,7 @@ ${items.length ? table(["Item", "Unidades", "Pedidos", "Faturamento"], items.map
 <h2>Melhores clientes</h2>
 ${customers.length ? table(["Cliente", "Telefone", "Pedidos", "Ticket médio", "Total gasto"], customers.map((c) => [esc(c.name), esc(c.phone), String(c.orders), esc(fmt(c.ticket)), esc(fmt(c.total))]), [2, 3, 4]) : "<p>Sem clientes no período.</p>"}
 <h2>Pedidos do período (${sorted.length})</h2>
-${sorted.length ? table(["Pedido", "Data", "Cliente", "Itens", "Pagamento", "Situação", "Total"], sorted.map((o) => [esc(orderNo(o.id)), esc(new Date(o.createdAt).toLocaleDateString("pt-BR")), esc(o.name), esc(itemText(o)), esc(payLabel(o.pay)), esc(statusLabel(o.status)), esc(fmt(o.total))]), [6]) : "<p>Sem pedidos no período.</p>"}
+${sorted.length ? table(["Pedido", "Data", "Cliente", "Itens", "Pagamento", "Situação", "Total"], sorted.map((o) => [esc(orderNo(o.id)), esc(new Date(o.createdAt).toLocaleDateString("pt-BR")), esc(o.name), esc(itemText(o)), esc(payLabel(o.pay) + " - " + payState(o)), esc(statusLabel(o.status)), esc(fmt(o.total))]), [6]) : "<p>Sem pedidos no período.</p>"}
 <p class="note">Relatório com dados de clientes. Guarde e compartilhe com cuidado.</p>
 </body></html>`;
 }

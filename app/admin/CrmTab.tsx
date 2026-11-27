@@ -7,7 +7,7 @@ import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
 import { api, ApiError } from "@/lib/admin-client";
 import { todayStr } from "@/lib/promo";
-import { STATUS, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
+import { STATUS, payState, custKey, byCustomer, byDay, byItem, counts, CSV, downloadCsv, orderDay, payLabel, statusLabel, summary, tally, type Order, type OrderStatus } from "@/lib/orders";
 import { BarChart, Donut, HBars } from "./charts";
 
 type View = "resumo" | "pedidos" | "clientes" | "itens";
@@ -127,6 +127,18 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
     }
   };
 
+  const setPay = async (id: string, payStatus: "pendente" | "pago") => {
+    const before = orders;
+    setOrders((cur) => (cur ? cur.map((o) => (o.id === id ? { ...o, payStatus } : o)) : cur));
+    try {
+      await api("/api/admin/orders", "PUT", { id, payStatus });
+    } catch (e) {
+      setOrders(before);
+      if (e instanceof ApiError && e.status === 401) onSignedOut();
+      else setErr(e instanceof Error ? e.message : "Não foi possível mudar o pagamento.");
+    }
+  };
+
   if (!configured)
     return (
       <div className="adm-pane">
@@ -179,7 +191,7 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
       )}
 
       {orders !== null && view === "resumo" && <Resumo orders={inPeriod} from={from} to={to} s={s} />}
-      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} />}
+      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} />}
       {orders !== null && view === "clientes" && <Clientes orders={inPeriod} />}
       {orders !== null && view === "itens" && <Itens orders={inPeriod} />}
     </div>
@@ -214,6 +226,8 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
       <div className="kpis">
         <Kpi label="Faturamento" value={fmt(s.revenue)} />
         <Kpi label="Pedidos" value={String(s.orders)} hint={s.cancelled ? `${s.cancelled} cancelado(s)` : undefined} />
+        <Kpi label="Recebido (pago)" value={fmt(s.received)} />
+        <Kpi label="A receber" value={fmt(s.toReceive)} />
         <Kpi label="Ticket médio" value={fmt(s.ticket)} />
         <Kpi label="Clientes" value={String(s.customers)} />
         <Kpi label="Unidades" value={String(s.units)} />
@@ -235,7 +249,7 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
 }
 
 /* ----------------------------------------------------------------- pedidos */
-function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void }) {
+function Pedidos({ orders, onStatus, onPay }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void; onPay: (id: string, p: "pendente" | "pago") => void }) {
   const [status, setStatus] = useState<OrderStatus | "todos">("todos");
   const [q, setQ] = useState("");
   const [board, setBoard] = useState(false);
@@ -273,6 +287,7 @@ function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string,
                     <header><b>{num(o.id)}</b><strong>{fmt(o.total)}</strong></header>
                     <p className="kan-who">{o.name}</p>
                     <p className="kan-sub">{o.delivery === "entrega" ? "Entrega" : "Retirada"} · {fmtDate(o.date)} {o.time}</p>
+                    {o.status !== "cancelado" && <button className={`paybtn${o.payStatus === "pago" ? " paid" : ""}`} aria-pressed={o.payStatus === "pago"} onClick={() => onPay(o.id, o.payStatus === "pago" ? "pendente" : "pago")}>{o.payStatus === "pago" ? "✓ Pago" : "A receber"}</button>}
                     <p className="kan-items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                     <footer>
                       <button className="iconbtn iconbtn-ghost" aria-label="Voltar etapa" disabled={si === 0 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si - 1].id)}><ChevronLeft size={18} /></button>
@@ -294,12 +309,15 @@ function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string,
               {STATUS.map((st) => <option key={st.id} value={st.id}>{st.label}</option>)}
             </select>
             <strong>{fmt(o.total)}</strong>
+            {o.status !== "cancelado" && (
+              <button className={`paybtn${o.payStatus === "pago" ? " paid" : ""}`} aria-pressed={o.payStatus === "pago"} title="Marcar como pago ou a receber" onClick={() => onPay(o.id, o.payStatus === "pago" ? "pendente" : "pago")}>{o.payStatus === "pago" ? "✓ Pago" : "A receber"}</button>
+            )}
           </header>
           <div className="ord-who">
             <b>{o.name}</b>
             {o.phone ? <a href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={14} /> {o.phone}</a> : <small>sem telefone</small>}
           </div>
-          <p className="ord-when">{o.delivery === "entrega" ? "Entrega" : "Retirada"} em {fmtDate(o.date)} às {o.time} · {payLabel(o.pay)}{o.troco ? ` (troco ${o.troco})` : ""}</p>
+          <p className="ord-when">{o.delivery === "entrega" ? "Entrega" : "Retirada"} em {fmtDate(o.date)} às {o.time} · {payLabel(o.pay)} · {payState(o)}{o.troco ? ` (troco ${o.troco})` : ""}</p>
           {(o.address || o.mapLink) && (
             <p className="ord-addr"><MapPin size={14} /> {o.address || "Localização no mapa"} {o.mapLink && <a href={o.mapLink} target="_blank" rel="noopener noreferrer">Abrir mapa</a>}</p>
           )}

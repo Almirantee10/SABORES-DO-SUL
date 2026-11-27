@@ -680,3 +680,6 @@ input[type=date],input[type=time]{color-scheme:dark}
 .feat-card em{font-style:normal;font:600 12px/1 var(--font-label);letter-spacing:.08em;text-transform:uppercase;color:var(--sds-espresso-900);background:var(--sds-gold-500);border-radius:999px;padding:7px 14px;margin-top:2px}
 .adm-star.on{color:var(--sds-gold-400)}
 .adm-star.on svg{fill:currentColor}
+
+.paybtn{border:1px solid var(--border-subtle);background:none;color:#e0b650;border-radius:999px;padding:5px 12px;font:600 12px/1 var(--font-label);letter-spacing:.04em;cursor:pointer;align-self:flex-start}
+.paybtn.paid{background:rgba(94,200,120,.16);border-color:rgba(94,200,120,.5);color:#8fe0a0}

@@ -114,12 +114,20 @@ export async function addOrder(base: NewOrder): Promise<string> {
 }
 
 export async function setStatus(id: string, status: OrderStatus): Promise<boolean> {
+  return patchOrder(id, { status });
+}
+
+export async function setPayStatus(id: string, payStatus: "pendente" | "pago"): Promise<boolean> {
+  return patchOrder(id, { payStatus });
+}
+
+async function patchOrder(id: string, patch: Partial<Order>): Promise<boolean> {
   if (!/^\d{4}-\d{2}-[0-9a-f]{6}$/.test(id)) return false;
   let found = false;
   await mutate(id.slice(0, 7), (list) => {
     if (!list.some((o) => o.id === id)) return null;
     found = true;
-    return list.map((o) => (o.id === id ? { ...o, status } : o));
+    return list.map((o) => (o.id === id ? { ...o, ...patch } : o));
   });
   return found;
 }

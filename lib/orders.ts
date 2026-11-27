@@ -9,6 +9,7 @@ export const STATUS: { id: OrderStatus; label: string }[] = [
   { id: "concluido", label: "Concluído" },
   { id: "cancelado", label: "Cancelado" },
 ];
+export const payState = (o: { payStatus?: string; status: string }) => (o.status === "cancelado" ? "-" : o.payStatus === "pago" ? "Pago" : "A receber");
 export const statusLabel = (s: string) => STATUS.find((x) => x.id === s)?.label ?? s;
 export const payLabel = (p: string) => ({ pix: "Pix", credito: "Cartão de crédito", debito: "Cartão de débito", dinheiro: "Dinheiro" } as Record<string, string>)[p] ?? p;
 
@@ -44,6 +45,8 @@ export type Order = {
   total: number;
   /** delivery fee included in the total (0 when none) */
   fee?: number;
+  /** has the customer paid? Orders saved before this existed count as pending */
+  payStatus?: "pendente" | "pago";
   /** fingerprint used to ignore the same order sent twice */
   sig?: string;
 };
@@ -73,6 +76,8 @@ export function summary(orders: Order[]) {
     customers: new Set(live.map(custKey)).size,
     units: live.reduce((a, o) => a + o.items.reduce((b, i) => b + i.qty, 0), 0),
     cancelled: orders.length - live.length,
+    received: live.filter((o) => o.payStatus === "pago").reduce((a, o) => a + o.total, 0),
+    toReceive: live.filter((o) => o.payStatus !== "pago").reduce((a, o) => a + o.total, 0),
   };
 }
 
@@ -146,7 +151,7 @@ const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ?
 export const CSV = {
   pedidos: (orders: Order[]) => [
     ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Recebimento", "Data", "Horário", "Endereço", "Mapa", "Pagamento", "Itens", "Total (R$)"],
-    ...orders.map((o) => [o.id, when(o.createdAt), statusLabel(o.status), o.name, o.phone, o.delivery === "entrega" ? "Entrega" : "Retirada", fmtDate(o.date), o.time, o.address, o.mapLink, payLabel(o.pay), itemText(o), money(o.total)]),
+    ...orders.map((o) => [o.id, when(o.createdAt), statusLabel(o.status), o.name, o.phone, o.delivery === "entrega" ? "Entrega" : "Retirada", fmtDate(o.date), o.time, o.address, o.mapLink, payLabel(o.pay) + " - " + payState(o), itemText(o), money(o.total)]),
   ],
   linhas: (orders: Order[]) => [
     ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Item", "Tamanho", "Sabores", "Quantidade", "Valor unitário (R$)", "Promoção (%)", "Subtotal (R$)"],
