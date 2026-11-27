@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronDown, ChevronUp, Copy, ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, ImagePlus, Pencil, Plus, Save, Star, Trash2, X } from "lucide-react";
 import { fmt, type ExtraGroup, type Product } from "@/lib/data";
 import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-client";
 import type { Cat, StoreData } from "@/lib/store-data";
@@ -138,6 +138,7 @@ export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
                   <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={idx === 0} onClick={() => move(p.id, -1)}><ChevronUp size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={idx === c.items.length - 1} onClick={() => move(p.id, 1)}><ChevronDown size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label={`Duplicar ${p.name}`} title="Duplicar" onClick={() => duplicate(p.id)}><Copy size={16} /></button>
+                  <button className={`iconbtn iconbtn-ghost${p.featured ? " adm-star on" : " adm-star"}`} aria-pressed={!!p.featured} aria-label={p.featured ? `Tirar ${p.name} dos destaques` : `Destacar ${p.name}`} title={p.featured ? "Em destaque" : "Destacar"} onClick={() => patch(p.id, (x) => ({ ...x, featured: !x.featured }))}><Star size={17} /></button>
                   <select aria-label={`Disponibilidade de ${p.name}`} value={availOf(p)} onChange={(e) => patch(p.id, (x) => withAvail(x, e.target.value))}>
                     <option value="ok">Disponível</option>
                     <option value="out">Indisponível</option>
@@ -347,6 +348,10 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
           )}
           <ExtrasEditor value={f.extras ?? []} onChange={(g) => setF({ ...f, extras: g.length ? g : undefined })} />
           <label className="adm-f"><span>Selo (opcional)</span><input value={f.badge ?? ""} maxLength={20} placeholder="Ex.: Novo" onChange={(e) => setF({ ...f, badge: e.target.value })} /></label>
+          <label className="adm-switch">
+            <input type="checkbox" checked={!!f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} />
+            <span>Produto em destaque (aparece em &ldquo;Destaques&rdquo; na página inicial e no cardápio)</span>
+          </label>
           <label className="adm-f">
             <span>Disponibilidade</span>
             <select value={availOf(f)} onChange={(e) => setF(withAvail(f, e.target.value))}>

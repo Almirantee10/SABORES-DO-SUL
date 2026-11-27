@@ -7,6 +7,7 @@ import { HeroIntro } from "@/components/HeroIntro";
 import { HeroLogo } from "@/components/HeroLogo";
 import { HeroBanner } from "@/components/HeroBanner";
 import { PromoStrip } from "@/components/PromoStrip";
+import { FeaturedStrip } from "@/components/FeaturedStrip";
 import { ContactBand } from "@/components/ContactBand";
 import { XmasTouch } from "@/components/XmasTouch";
 import { SettingText } from "@/components/SettingText";
@@ -44,6 +45,7 @@ export default function Home() {
       </section>
 
       <PromoStrip />
+      <FeaturedStrip />
 
       <Marquee items={MARQUEE} />
 

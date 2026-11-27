@@ -29,6 +29,8 @@ export type Product = {
   ask?: string;
   /** out of stock: still listed, but cannot be ordered */
   soldOut?: boolean;
+  /** shown in the "Destaques" strip on the home page and at the top of the menu */
+  featured?: boolean;
   /** with soldOut: paused for a while, shown as "Pausado" instead of "Esgotado" */
   paused?: boolean;
   sizes?: Size[];

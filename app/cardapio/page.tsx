@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
 import { PromoStrip } from "@/components/PromoStrip";
+import { FeaturedStrip } from "@/components/FeaturedStrip";
 import { XmasTouch } from "@/components/XmasTouch";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
 import { CategoryTabs, InfoPill } from "@/components/ui";
@@ -69,6 +70,7 @@ export default function Cardapio() {
       </section>
 
       <PromoStrip link={false} />
+      <FeaturedStrip />
 
       <div className="tabsbar tabsbar-bar">
         <CategoryTabs variant="bar" items={CATS} value={tab || CATS[0]?.id} onChange={(id) => scrollTo(id)} />

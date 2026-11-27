@@ -58,6 +58,7 @@ function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product 
   if (badge) out.badge = badge;
   const ask = str(r.ask, 60);
   if (ask) out.ask = ask;
+  if (r.featured === true) out.featured = true;
   if (r.soldOut === true) out.soldOut = true;
   if (r.soldOut === true && r.paused === true) out.paused = true; // "temporarily paused": blocked like sold out, with its own label
 
