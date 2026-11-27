@@ -683,3 +683,8 @@ input[type=date],input[type=time]{color-scheme:dark}
 
 .paybtn{border:1px solid var(--border-subtle);background:none;color:#e0b650;border-radius:999px;padding:5px 12px;font:600 12px/1 var(--font-label);letter-spacing:.04em;cursor:pointer;align-self:flex-start}
 .paybtn.paid{background:rgba(94,200,120,.16);border-color:rgba(94,200,120,.5);color:#8fe0a0}
+
+.repeat-last{align-self:center;margin:0 auto}
+.repeat-wrap{display:flex;justify-content:center;padding:0 16px}
+.repeat-wrap:has(.repeat-last){padding-top:14px}
+.ord-foot{display:flex;justify-content:flex-end;margin-top:6px}

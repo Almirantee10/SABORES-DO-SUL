@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useCatalog } from "@/components/Catalog";
 import { ShopStatus } from "@/components/ShopStatus";
 import { PromoStrip } from "@/components/PromoStrip";
+import { RepeatLast } from "@/components/RepeatLast";
 import { FeaturedStrip } from "@/components/FeaturedStrip";
 import { XmasTouch } from "@/components/XmasTouch";
 import { gsap, ScrollTrigger, useGSAP, noMotion } from "@/lib/gsap";
@@ -69,6 +70,7 @@ export default function Cardapio() {
         </div>
       </section>
 
+      <div className="repeat-wrap"><RepeatLast /></div>
       <PromoStrip link={false} />
       <FeaturedStrip />
 

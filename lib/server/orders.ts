@@ -98,11 +98,11 @@ export async function listOrders(months = 12): Promise<Order[]> {
 export type NewOrder = Omit<Order, "id" | "createdAt" | "status">;
 
 /** Saves an order; the same order sent again within 6 hours returns the first one. */
-export async function addOrder(base: NewOrder): Promise<string> {
+export async function addOrder(base: NewOrder, force = false): Promise<string> {
   const k = monthOf();
   let id = "";
   await mutate(k, (list) => {
-    const dup = list.find((o) => o.sig === base.sig && Date.now() - Date.parse(o.createdAt) < 6 * 3600_000);
+    const dup = force ? undefined : list.find((o) => o.sig === base.sig && Date.now() - Date.parse(o.createdAt) < 6 * 3600_000);
     if (dup) {
       id = dup.id;
       return null;
@@ -111,6 +111,16 @@ export async function addOrder(base: NewOrder): Promise<string> {
     return [{ ...base, id, createdAt: new Date().toISOString(), status: "novo" }, ...list];
   });
   return id;
+}
+
+/** Admin: a new order with the same customer, items and total as an old one (e.g. a regular customer asking by phone). */
+export async function repeatOrder(id: string): Promise<string | null> {
+  const orders = await listOrders(12);
+  const o = orders.find((x) => x.id === id);
+  if (!o) return null;
+  const { id: _i, createdAt: _c, status: _s, payStatus: _p, sig: _g, ...rest } = o;
+  void _i; void _c; void _s; void _p; void _g;
+  return addOrder(rest, true);
 }
 
 export async function setStatus(id: string, status: OrderStatus): Promise<boolean> {

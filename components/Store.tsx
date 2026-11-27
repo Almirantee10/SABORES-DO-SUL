@@ -14,6 +14,8 @@ export type CartItem = {
   /** unit price: already includes the extras */
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
   extras?: PickedExtra[];
+  /** the choices as the customer made them, to repeat the order later */
+  src?: Sheet;
 };
 /** extras = picked option keys ("groupId:optionId") */
 export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string; extras?: string[] };
@@ -45,12 +47,19 @@ type Ctx = {
   setSent: (t: string | null) => void;
   buildMessage: () => string;
   hydrated: boolean;
+  /** the last order this customer sent from this phone (null = none yet) */
+  lastOrder: { items: Sheet[]; count: number } | null;
+  /** saves the current cart as the last order; call when it is sent */
+  rememberOrder: () => void;
+  /** puts the last order back in the cart at today's prices; returns how many items could be added */
+  repeatLast: () => number;
 };
 
 const StoreCtx = createContext<Ctx>(null as unknown as Ctx);
 export const useStore = () => useContext(StoreCtx);
 
 const LS = "sds-pedido-next-v1";
+const LAST = "sds-last-order-v1";
 const EMPTY: Checkout = { custName: "", phone: "", delivery: "retirada", address: "", mapLink: "", date: "", time: "", pay: null, troco: "", obsGeral: "" };
 
 export const burst = () => window.dispatchEvent(new CustomEvent("sds:burst"));
@@ -62,6 +71,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<string | null>(null);
   const [sent, setSent] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const [last, setLast] = useState<Sheet[] | null>(null);
   const tt = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const { byId, open: shopOpen, promoPct, settings } = useCatalog();
 
@@ -73,6 +83,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         setCart(s.cart);
         setCo({ ...EMPTY, ...s.checkout });
       }
+    } catch {}
+    try {
+      const l = JSON.parse(localStorage.getItem(LAST) || "null");
+      if (Array.isArray(l) && l.length) setLast(l);
     } catch {}
     setHydrated(true);
     void flushOutbox();
@@ -120,6 +134,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
       flavors: s.flavors.slice(), obs: s.obs || "",
       extras: ex.chosen.length ? ex.chosen : undefined,
+      src: { pid: s.pid, size: s.size, flavors: s.flavors.slice(), qty: s.qty, obs: s.obs || "", extras: (s.extras ?? []).slice() },
     };
     setCart((c) => c.concat([item]));
     burst();
@@ -131,6 +146,24 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addDirect(sheet);
     setSheet(null);
   }, [sheet, addDirect]);
+
+  const rememberOrder = useCallback(() => {
+    const items = cart.map((i) => i.src).filter((x): x is Sheet => !!x);
+    if (!items.length) return;
+    setLast(items);
+    try { localStorage.setItem(LAST, JSON.stringify(items)); } catch {}
+  }, [cart]);
+
+  const repeatLast = useCallback(() => {
+    let n = 0;
+    for (const s of last ?? []) {
+      const p = byId[s.pid];
+      if (!p || p.soldOut) continue;
+      addDirect(s);
+      n++;
+    }
+    return n;
+  }, [last, byId, addDirect]);
 
   const total = useMemo(() => cart.reduce((a, it) => a + it.qty * it.price, 0), [cart]);
   const fee = checkout.delivery === "entrega" ? settings.deliveryFee : 0;
@@ -175,6 +208,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value: Ctx = {
     cart, total, fee, grand, checkout, hydrated,
+    lastOrder: last ? { items: last, count: last.length } : null, rememberOrder, repeatLast,
     setCheckout: (p) => setCo((c) => ({ ...c, ...p })),
     patchItem: (uid, p) => setCart((c) => c.map((it) => (it.uid === uid ? { ...it, ...p } : it))),
     removeItem: (uid) => setCart((c) => c.filter((x) => x.uid !== uid)),

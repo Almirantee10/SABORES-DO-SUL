@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Columns3, Download, FileSpreadsheet, FileText, List, MapPin, MessageCircle, RefreshCw, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Columns3, Download, FileSpreadsheet, FileText, List, MapPin, MessageCircle, RefreshCw, Repeat, Search } from "lucide-react";
 import { useCatalog } from "@/components/Catalog";
 import { downloadXlsx, printReport } from "@/lib/report";
 import { fmt, fmtDate } from "@/lib/data";
@@ -139,6 +139,16 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
     }
   };
 
+  const repeat = async (id: string) => {
+    try {
+      await api("/api/admin/orders", "POST", { repeat: id });
+      await load();
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) onSignedOut();
+      else setErr(e instanceof Error ? e.message : "Não foi possível repetir o pedido.");
+    }
+  };
+
   if (!configured)
     return (
       <div className="adm-pane">
@@ -191,7 +201,7 @@ export function CrmTab({ onSignedOut }: { onSignedOut: () => void }) {
       )}
 
       {orders !== null && view === "resumo" && <Resumo orders={inPeriod} from={from} to={to} s={s} />}
-      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} />}
+      {orders !== null && view === "pedidos" && <Pedidos orders={inPeriod} onStatus={setStatus} onPay={setPay} onRepeat={repeat} />}
       {orders !== null && view === "clientes" && <Clientes orders={inPeriod} />}
       {orders !== null && view === "itens" && <Itens orders={inPeriod} />}
     </div>
@@ -249,7 +259,7 @@ function Resumo({ orders, from, to, s }: { orders: Order[]; from: string; to: st
 }
 
 /* ----------------------------------------------------------------- pedidos */
-function Pedidos({ orders, onStatus, onPay }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void; onPay: (id: string, p: "pendente" | "pago") => void }) {
+function Pedidos({ orders, onStatus, onPay, onRepeat }: { orders: Order[]; onStatus: (id: string, s: OrderStatus) => void; onPay: (id: string, p: "pendente" | "pago") => void; onRepeat: (id: string) => void }) {
   const [status, setStatus] = useState<OrderStatus | "todos">("todos");
   const [q, setQ] = useState("");
   const [board, setBoard] = useState(false);
@@ -327,6 +337,7 @@ function Pedidos({ orders, onStatus, onPay }: { orders: Order[]; onStatus: (id: 
             ))}
           </ul>
           {o.notes && <p className="ord-note">Obs. do pedido: {o.notes}</p>}
+          <div className="ord-foot"><button className="btn btn-ghost btn-sm" onClick={() => { if (window.confirm(`Repetir o pedido ${num(o.id)} de ${o.name}? Um novo pedido igual será criado como Novo.`)) onRepeat(o.id); }}><Repeat size={15} /> <span>Repetir pedido</span></button></div>
         </article>
       ))}
     </>

@@ -8,6 +8,7 @@ import { defaultSettings } from "@/lib/store-data";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "@/components/Store";
 import { useCatalog } from "@/components/Catalog";
+import { RepeatLast } from "@/components/RepeatLast";
 import { TimePicker } from "@/components/TimePicker";
 import { ShopStatus } from "@/components/ShopStatus";
 import { recordOrder } from "@/lib/orders-client";
@@ -16,7 +17,7 @@ import { Button, Field, OptionRow, PriceTag, QuantityStepper, SectionHeading, Th
 import { CountUp, Reveal } from "@/components/Motion";
 
 export default function Carrinho() {
-  const { cart, fee, grand, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated } = useStore();
+  const { cart, fee, grand, checkout, setCheckout, patchItem, removeItem, clearCart, setSent, buildMessage, hydrated, rememberOrder } = useStore();
   const root = useRef<HTMLDivElement>(null);
   const { open: shopOpen, settings } = useCatalog();
   const payOptions = PAY.filter((p) => settings.pay.includes(p.id));
@@ -62,6 +63,7 @@ export default function Carrinho() {
     if (cantSend || !cart.length) return;
     setSent(buildMessage());
     void recordOrder(cart, checkout);
+    rememberOrder();
   };
 
   const verb = checkout.delivery === "entrega" ? "entrega" : "retirada";
@@ -110,6 +112,7 @@ export default function Carrinho() {
         <Reveal className="empty">
           <ShoppingBag size={40} />
           <p className="lead" style={{ fontSize: 17 }}>Seu pedido está vazio. Que tal começar por um cento de salgados?</p>
+          <RepeatLast />
           <Button href="/cardapio">Ver cardápio</Button>
         </Reveal>
       )}
