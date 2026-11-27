@@ -282,6 +282,17 @@ function Pedidos({ orders, onStatus, onPay, onRepeat, onEdit, onDelete, onCancel
         </div>
         <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nome, telefone ou nº" aria-label="Buscar pedido" /></label>
       </div>
+      <div className="status-totals" aria-label="Total por situação">
+        {STATUS.map((st) => {
+          const mine = list.filter((o) => o.status === st.id);
+          return (
+            <button key={st.id} type="button" className={`stot st-${st.id}${status === st.id ? " on" : ""}`} onClick={() => setStatus(status === st.id ? "todos" : st.id)} aria-pressed={status === st.id}>
+              <small>{st.label} · {mine.length} pedido(s)</small>
+              <b>{fmt(mine.reduce((a, o) => a + o.total, 0))}</b>
+            </button>
+          );
+        })}
+      </div>
       <div className="crm-actions">
         <div className="adm-seg" role="group" aria-label="Forma de exibir">
           <button className={!board ? "on open" : ""} onClick={() => setBoard(false)}><List size={15} /> Lista</button>
@@ -293,7 +304,7 @@ function Pedidos({ orders, onStatus, onPay, onRepeat, onEdit, onDelete, onCancel
       {list.length === 0 && <p className="adm-note">Nenhum pedido neste filtro.</p>}
       {board && list.length > 0 && (
         <div className="kanban">
-          {STATUS.map((st, si) => {
+          {STATUS.map((st) => {
             const col = list.filter((o) => o.status === st.id);
             return (
               <section key={st.id} className={`kan-col st-${st.id}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { const id = e.dataTransfer.getData("text/plain"); const dropped = orders.find((x) => x.id === id); if (dropped && dropped.status !== st.id) onStatus(id, st.id); }}>
@@ -308,9 +319,9 @@ function Pedidos({ orders, onStatus, onPay, onRepeat, onEdit, onDelete, onCancel
                     <p className="kan-items">{o.items.map((i) => `${i.qty}× ${i.name}`).join(", ")}</p>
                     <footer>
                       <button className="iconbtn iconbtn-ghost" aria-label="Editar pedido" onClick={() => onEdit(o)}><Pencil size={16} /></button>
-                      <button className="iconbtn iconbtn-ghost" aria-label="Voltar etapa" disabled={si === 0 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si - 1].id)}><ChevronLeft size={18} /></button>
+                      <button className="iconbtn iconbtn-ghost" aria-label="Voltar etapa" disabled={st.id !== "concluido"} onClick={() => onStatus(o.id, "novo")}><ChevronLeft size={18} /></button>
                       {o.phone && <a className="iconbtn iconbtn-ghost" aria-label="Chamar no WhatsApp" href={`https://wa.me/55${digits(o.phone)}`} target="_blank" rel="noopener noreferrer"><MessageCircle size={16} /></a>}
-                      <button className="iconbtn iconbtn-ghost" aria-label="Avançar etapa" disabled={si >= STATUS.length - 2 || st.id === "cancelado"} onClick={() => onStatus(o.id, STATUS[si + 1].id)}><ChevronRight size={18} /></button>
+                      <button className="iconbtn iconbtn-ghost" aria-label="Avançar etapa" disabled={st.id !== "novo"} onClick={() => onStatus(o.id, "concluido")}><ChevronRight size={18} /></button>
                     </footer>
                   </article>
                 ))}
@@ -451,7 +462,7 @@ function Dashboard({ orders }: { orders: Order[] }) {
   const today = todayStr();
   const mine = orders.filter((o) => orderDay(o.createdAt) === today);
   const s = summary(mine);
-  const active = orders.filter((o) => o.status === "novo" || o.status === "preparo" || o.status === "pronto").length;
+  const active = orders.filter((o) => o.status === "novo").length;
   const done = mine.filter((o) => o.status === "concluido").length;
   const first = new Map<string, string>();
   for (const o of [...orders].sort((a, b) => a.createdAt.localeCompare(b.createdAt))) if (!first.has(custKey(o))) first.set(custKey(o), orderDay(o.createdAt));
@@ -467,7 +478,7 @@ function Dashboard({ orders }: { orders: Order[] }) {
       <div className="kpis">
         <div className="kpi"><small>Loja</small><b style={{ color: open ? "#8fe0a0" : "#e08a7f" }}>{open ? "● Aberta" : "● Fechada"}</b></div>
         <Kpi label="Pedidos hoje" value={String(s.orders)} hint={s.cancelled ? `${s.cancelled} cancelado(s)` : undefined} />
-        <Kpi label="Em andamento" value={String(active)} hint="novo, em preparo ou pronto" />
+        <Kpi label="Em andamento" value={String(active)} hint="pedidos novos, ainda não concluídos" />
         <Kpi label="Concluídos hoje" value={String(done)} />
         <Kpi label="Faturamento do dia" value={fmt(s.revenue)} />
         <Kpi label="Ticket médio" value={fmt(s.ticket)} />

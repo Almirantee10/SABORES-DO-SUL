@@ -3,7 +3,7 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import type { Settings } from "@/lib/store-data";
-import { STATUS, type Order, type OrderItem, type OrderStatus } from "@/lib/orders";
+import { STATUS, fixLegacy, type Order, type OrderItem, type OrderStatus } from "@/lib/orders";
 
 /*
  * Orders hold customer names, phones and addresses, and the Blob store is public,
@@ -47,10 +47,10 @@ async function readMonth(k: string): Promise<{ orders: Order[]; etag?: string }>
     if (!b) return { orders: [] };
     const res = await fetch(`${b.url}?v=${encodeURIComponent(b.etag)}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`pedidos: leitura falhou (${res.status})`);
-    return { orders: JSON.parse(unseal(await res.text())), etag: b.etag };
+    return { orders: (JSON.parse(unseal(await res.text())) as Order[]).map(fixLegacy), etag: b.etag };
   }
   try {
-    return { orders: JSON.parse(unseal(await fs.readFile(local(k), "utf8"))) };
+    return { orders: (JSON.parse(unseal(await fs.readFile(local(k), "utf8"))) as Order[]).map(fixLegacy) };
   } catch (e) {
     if ((e as NodeJS.ErrnoException).code === "ENOENT") return { orders: [] };
     throw e;

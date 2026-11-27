@@ -707,3 +707,13 @@ input[type=date],input[type=time]{color-scheme:dark}
 
 .adm-top-r{display:flex;align-items:center;gap:10px}
 .adm-areas .dot{margin-left:6px;font-style:normal;background:var(--sds-gold-500);color:var(--sds-espresso-900);border-radius:999px;padding:1px 7px;font:700 11px/1.4 var(--font-label)}
+
+.status-totals{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:4px 0 12px}
+.stot{display:flex;flex-direction:column;gap:6px;text-align:left;padding:12px 14px;border-radius:var(--radius-md);border:1px solid var(--border-subtle);border-top-width:4px;background:rgba(245,235,221,.04);color:var(--sds-cream-50);cursor:pointer}
+.stot small{font:600 12px/1.2 var(--font-label);letter-spacing:.05em;text-transform:uppercase}
+.stot b{font:700 22px/1 var(--font-serif)}
+.stot.st-novo{border-top-color:#4aa3ff}.stot.st-novo small,.stot.st-novo b{color:#7cc0ff}
+.stot.st-concluido{border-top-color:#3fae5c}.stot.st-concluido small,.stot.st-concluido b{color:#6fd68a}
+.stot.st-cancelado{border-top-color:#d9483b}.stot.st-cancelado small,.stot.st-cancelado b{color:#f08a7f}
+.stot.on{box-shadow:0 0 0 2px rgba(242,194,74,.55)}
+@media (max-width:560px){.status-totals{grid-template-columns:1fr}.stot b{font-size:20px}}

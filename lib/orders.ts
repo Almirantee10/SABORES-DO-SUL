@@ -1,15 +1,22 @@
 import { fmt, fmtDate } from "@/lib/data";
 
-export type OrderStatus = "novo" | "preparo" | "pronto" | "concluido" | "cancelado";
+export type OrderStatus = "novo" | "concluido" | "cancelado";
 
 export const STATUS: { id: OrderStatus; label: string }[] = [
-  { id: "novo", label: "Novo" },
-  { id: "preparo", label: "Em preparo" },
-  { id: "pronto", label: "Pronto" },
+  { id: "novo", label: "Recebido" },
   { id: "concluido", label: "Concluído" },
   { id: "cancelado", label: "Cancelado" },
 ];
 export const payState = (o: { payStatus?: string; status: string }) => (o.status === "cancelado" ? "-" : o.payStatus === "pago" ? "Pago" : "A receber");
+/** Orders saved when "Em preparo" and "Pronto" still existed count as new again. */
+export const legacyStatus = (s: string): OrderStatus => (s === "concluido" || s === "cancelado" ? s : "novo");
+export function fixLegacy<T extends { status: string; history?: { status: string; at: string }[] }>(o: T): T {
+  return {
+    ...o,
+    status: legacyStatus(o.status),
+    ...(o.history ? { history: o.history.filter((h) => h.status === "novo" || h.status === "concluido" || h.status === "cancelado") } : {}),
+  };
+}
 export const statusLabel = (s: string) => STATUS.find((x) => x.id === s)?.label ?? s;
 export const payLabel = (p: string) => ({ pix: "Pix", credito: "Cartão de crédito", debito: "Cartão de débito", dinheiro: "Dinheiro" } as Record<string, string>)[p] ?? p;
 
