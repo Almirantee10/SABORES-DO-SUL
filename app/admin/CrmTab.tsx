@@ -305,7 +305,7 @@ function Pedidos({ orders, onStatus }: { orders: Order[]; onStatus: (id: string,
           )}
           <ul>
             {o.items.map((i, k) => (
-              <li key={k}><b>{i.qty}×</b> {i.name}{i.size ? ` · ${i.size}` : ""}{i.pct ? ` · promo -${i.pct}%` : ""}{i.flavors.length ? <small> — {i.flavors.join(", ")}</small> : null}{i.obs ? <small> — obs.: {i.obs}</small> : null}<span>{fmt(i.qty * i.price)}</span></li>
+              <li key={k}><b>{i.qty}×</b> {i.name}{i.size ? ` · ${i.size}` : ""}{i.pct ? ` · promo -${i.pct}%` : ""}{i.flavors.length ? <small> — {i.flavors.join(", ")}</small> : null}{i.extras?.length ? <small> — adicionais: {i.extras.map((e) => e.name).join(", ")}</small> : null}{i.obs ? <small> — obs.: {i.obs}</small> : null}<span>{fmt(i.qty * i.price)}</span></li>
             ))}
           </ul>
           {o.notes && <p className="ord-note">Obs. do pedido: {o.notes}</p>}

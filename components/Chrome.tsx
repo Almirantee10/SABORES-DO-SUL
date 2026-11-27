@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Check, Copy, Plus, X } from "lucide-react";
 import { PAGES, fmt, maxFlavors, waUrl, waLabel } from "@/lib/data";
 import { promoPrice } from "@/lib/promo";
+import { readExtras } from "@/lib/extras";
+import { ExtrasPicker } from "./ExtrasPicker";
 import { useCatalog } from "./Catalog";
 import { gsap, useGSAP, noMotion } from "@/lib/gsap";
 import { useStore } from "./Store";
@@ -190,7 +192,8 @@ export function ProductSheet() {
   const p = byId[sheet.pid];
   if (!p) return null;
   const z = p.sizes?.find((x) => x.id === sheet.size) || null;
-  const unitPrice = promoPrice((z ? z.price : p.price) as number, promoPct(p.id));
+  const ex = readExtras(p, sheet.extras ?? []);
+  const unitPrice = promoPrice((z ? z.price : p.price) as number, promoPct(p.id)) + ex.sum;
   const max = maxFlavors(p, sheet.size);
   const chosen = sheet.flavors;
   const single = p.pick === 1;
@@ -206,7 +209,8 @@ export function ProductSheet() {
       footer={
         <>
           {needFlavor && <p className="warn">Escolha pelo menos 1 sabor para adicionar.</p>}
-          <Button size="lg" full disabled={needFlavor} onClick={addToCart}><Plus size={18} strokeWidth={2.6} /> <span>Adicionar · {fmt(unitPrice * sheet.qty)}</span></Button>
+          {!needFlavor && ex.problem && <p className="warn">{ex.problem}</p>}
+          <Button size="lg" full disabled={needFlavor || !!ex.problem} onClick={addToCart}><Plus size={18} strokeWidth={2.6} /> <span>Adicionar · {fmt(unitPrice * sheet.qty)}</span></Button>
         </>
       }
     >
@@ -235,6 +239,7 @@ export function ProductSheet() {
           })}
         </div>
       )}
+      <ExtrasPicker p={p} picked={sheet.extras ?? []} onChange={(next) => patchSheet(() => ({ extras: next }))} />
       <div className="qty-row">
         <div><span className="lbl">Quantidade</span><small>{qtyHint}</small></div>
         <QuantityStepper value={sheet.qty} min={min} step={step} onChange={(v) => patchSheet(() => ({ qty: v }))} />

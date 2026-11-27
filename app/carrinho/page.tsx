@@ -128,6 +128,7 @@ export default function Carrinho() {
                       {it.pct ? <span className="promo-tag">-{it.pct}%{it.origPrice ? ` · de ${fmt(it.origPrice)}` : ""}</span> : null}
                     </small>
                     {it.flavors.map((f) => <span className="fl" key={f}>- {f}</span>)}
+                    {(it.extras ?? []).map((e, k) => <span className="fl" key={k}>+ {e.name}{e.price > 0 ? ` (${fmt(e.price)})` : ""}</span>)}
                   </div>
                   <button className="iconbtn iconbtn-ghost" aria-label="Remover" onClick={() => remove(it.uid)}><Trash2 size={18} /></button>
                 </div>

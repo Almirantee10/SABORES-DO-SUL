@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import { fmt, maxFlavors, type Product } from "@/lib/data";
 import { promoPrice } from "@/lib/promo";
 import { gsap, noMotion } from "@/lib/gsap";
+import { readExtras } from "@/lib/extras";
+import { ExtrasPicker } from "./ExtrasPicker";
 import { useStore } from "./Store";
 import { useCatalog } from "./Catalog";
 import { Badge, Field, OptionRow, QuantityStepper, Thumb } from "./ui";
@@ -22,7 +24,10 @@ export function ProductInline({ p }: { p: Product }) {
 
   // the menu can change while this card is on screen (price, sizes, flavors)
   const z = p.sizes?.find((x) => x.id === size) || p.sizes?.[0] || null;
-  const unit = promoPrice((z ? z.price : p.price) as number, pct);
+  const [extras, setExtras] = useState<string[]>([]);
+  const ex = readExtras(p, extras);
+  // extras are not discounted by a promotion
+  const unit = promoPrice((z ? z.price : p.price) as number, pct) + ex.sum;
   const max = maxFlavors(p, z ? z.id : null);
   const single = p.pick === 1;
   const min = z ? 1 : p.min || 1;
@@ -39,8 +44,9 @@ export function ProductInline({ p }: { p: Product }) {
     setFlavors((cur) => (single ? [f] : cur.includes(f) ? cur.filter((x) => x !== f) : cur.length < max ? cur.concat([f]) : cur));
 
   const add = () => {
-    if (need || blocked) return;
-    addDirect({ pid: p.id, size: z ? z.id : null, flavors: picked, qty: Math.max(qty, min), obs: obs.trim() });
+    if (need || blocked || ex.problem) return;
+    addDirect({ pid: p.id, size: z ? z.id : null, flavors: picked, qty: Math.max(qty, min), obs: obs.trim(), extras });
+    setExtras([]);
     setFlavors([]);
     setObs("");
     setQty(min);
@@ -83,16 +89,19 @@ export function ProductInline({ p }: { p: Product }) {
         </div>
       )}
 
+      <ExtrasPicker p={p} picked={extras} onChange={setExtras} />
+
       <div className="pi-foot">
         {p.ask && <Field label={p.ask} placeholder="Ex.: uva, laranja, maracujá" value={obs} onChange={(e) => setObs(e.target.value)} />}
         <div className="pi-qty">
           <div><span className="lbl">Quantidade</span><small>{z ? (z.id === "cento" ? "Quantos centos" : z.id === "meio" ? "Quantos meios centos" : "Quantas porções") : p.min && p.min > 1 ? `Mínimo de ${p.min} unidades` : `${fmt(unit)} cada`}</small></div>
           <QuantityStepper value={qty} min={min} step={step} onChange={setQty} />
         </div>
-        <button ref={btn} type="button" className="btn btn-primary btn-lg btn-full" disabled={need || blocked} onClick={add}>
+        <button ref={btn} type="button" className="btn btn-primary btn-lg btn-full" disabled={need || blocked || !!ex.problem} onClick={add}>
           {!blocked && <Plus size={18} strokeWidth={2.6} />} <span>{label}</span>
         </button>
         {need && !blocked && <p className="warn">Escolha pelo menos 1 sabor para adicionar.</p>}
+        {!need && ex.problem && !blocked && <p className="warn">{ex.problem}</p>}
       </div>
     </article>
   );

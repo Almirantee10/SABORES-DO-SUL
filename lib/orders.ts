@@ -21,6 +21,8 @@ export type OrderItem = {
   /** promotion discount applied to this line, in percent (0 = none) */
   pct: number;
   flavors: string[];
+  /** extras picked by the customer; the unit price already includes them */
+  extras?: { name: string; price: number }[];
   obs: string;
 };
 
@@ -139,7 +141,7 @@ export function tally<T extends string>(orders: Order[], pick: (o: Order) => T) 
 
 const money = (n: number) => n.toFixed(2).replace(".", ",");
 const when = (iso: string) => new Date(iso).toLocaleString("pt-BR");
-const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ? " (" + i.size + ")" : ""}${i.flavors.length ? " [" + i.flavors.join(", ") + "]" : ""}`).join(" | ");
+const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ? " (" + i.size + ")" : ""}${i.flavors.length ? " [" + i.flavors.join(", ") + "]" : ""}${i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""}`).join(" | ");
 
 export const CSV = {
   pedidos: (orders: Order[]) => [
@@ -148,7 +150,7 @@ export const CSV = {
   ],
   linhas: (orders: Order[]) => [
     ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Item", "Tamanho", "Sabores", "Quantidade", "Valor unitário (R$)", "Promoção (%)", "Subtotal (R$)"],
-    ...orders.flatMap((o) => o.items.map((i) => [o.id, when(o.createdAt), statusLabel(o.status), o.name, o.phone, i.name, i.size, i.flavors.join(", "), i.qty, money(i.price), i.pct || "", money(i.qty * i.price)])),
+    ...orders.flatMap((o) => o.items.map((i) => [o.id, when(o.createdAt), statusLabel(o.status), o.name, o.phone, i.name, i.size, i.flavors.join(", ") + (i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""), i.qty, money(i.price), i.pct || "", money(i.qty * i.price)])),
   ],
   clientes: (list: CustomerStat[]) => [
     ["Cliente", "Telefone", "Pedidos", "Total gasto (R$)", "Ticket médio (R$)", "Primeiro pedido", "Último pedido", "Itens mais pedidos"],

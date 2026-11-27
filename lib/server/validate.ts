@@ -1,4 +1,4 @@
-import { PAY, type Product, type Size } from "@/lib/data";
+import { PAY, type ExtraGroup, type ExtraOption, type Product, type Size } from "@/lib/data";
 import { defaultSettings, type Cat, type Settings, type StoreData } from "@/lib/store-data";
 import type { Promo } from "@/lib/promo";
 import { DAY_NAMES, defaultSchedule, type Schedule } from "@/lib/schedule";
@@ -73,6 +73,32 @@ function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product 
     const step = int(r.step, 1, 1000);
     if (min && min > 1) out.min = min;
     if (step && step > 1) out.step = step;
+  }
+
+  if (Array.isArray(r.extras) && r.extras.length) {
+    if (r.extras.length > 8) return `"${name}": no máximo 8 grupos de adicionais`;
+    const groups: ExtraGroup[] = [];
+    for (let gi = 0; gi < r.extras.length; gi++) {
+      const g = (r.extras[gi] && typeof r.extras[gi] === "object" ? r.extras[gi] : {}) as Record<string, unknown>;
+      const gname = str(g.name, 40);
+      if (!gname) return `"${name}": todo grupo de adicionais precisa de um nome`;
+      const rawOpts = Array.isArray(g.options) ? g.options.slice(0, 30) : [];
+      const options: ExtraOption[] = [];
+      for (let oi = 0; oi < rawOpts.length; oi++) {
+        const o = (rawOpts[oi] && typeof rawOpts[oi] === "object" ? rawOpts[oi] : {}) as Record<string, unknown>;
+        const oname = str(o.name, 40);
+        if (!oname) continue; // an empty line is just dropped
+        const price = num(o.price ?? 0, 0, 999);
+        if (price === null) return `"${name}": valor inválido em "${oname}"`;
+        options.push({ id: `o${oi + 1}`, name: oname, price });
+      }
+      if (!options.length) return `"${name}": o grupo "${gname}" precisa de ao menos uma opção`;
+      const max = int(g.max, 1, options.length) ?? options.length;
+      const min = int(g.min ?? 0, 0, max);
+      if (min === null) return `"${name}": o mínimo de "${gname}" não pode passar do máximo`;
+      groups.push({ id: `g${gi + 1}`, name: gname, min, max, options });
+    }
+    out.extras = groups;
   }
 
   if (Array.isArray(r.flavors) && r.flavors.length) {

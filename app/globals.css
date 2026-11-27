@@ -659,3 +659,11 @@ input[type=date],input[type=time]{color-scheme:dark}
 .adm-sched-t input{background:var(--sds-espresso-900);border:1px solid var(--border-subtle);border-radius:8px;color:var(--sds-cream-50);padding:8px 10px;font:400 15px/1 var(--font-body)}
 .adm-sched-t i{font-style:normal;color:var(--text-muted)}
 @media (max-width:560px){.adm-sched-row{grid-template-columns:1fr auto}.adm-sched-t{grid-column:1/-1;justify-content:flex-start}}
+
+.adm-extra{border:1px solid var(--border-subtle);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;background:rgba(245,235,221,.03)}
+.adm-extra-h,.adm-extra-o{display:flex;gap:8px;align-items:center}
+.adm-extra-h input,.adm-extra-o>input{flex:1;min-width:0}
+.adm-extra-o .adm-money,.adm-extra-o>span{flex:none;width:120px}
+.adm-extra-rules{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.adm-extra-n{display:flex;gap:6px;align-items:center}
+.adm-extra-n input{width:52px;text-align:center}

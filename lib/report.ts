@@ -4,7 +4,7 @@ import { byCustomer, byDay, byItem, payLabel, statusLabel, summary, tally, type 
 /* Report exports: a formatted Excel workbook and a printable page (save it as PDF). */
 
 const stamp = (iso: string) => new Date(iso).toLocaleString("pt-BR");
-const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ? " (" + i.size + ")" : ""}${i.flavors.length ? " [" + i.flavors.join(", ") + "]" : ""}`).join(" | ");
+const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ? " (" + i.size + ")" : ""}${i.flavors.length ? " [" + i.flavors.join(", ") + "]" : ""}${i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""}`).join(" | ");
 const orderNo = (id: string) => "#" + id.slice(8).toUpperCase();
 
 /* -------------------------------------------------------------------- Excel */
@@ -72,7 +72,7 @@ export async function downloadXlsx(orders: Order[], from: string, to: string) {
         stickyRowsCount: 1,
         data: [
           ["Pedido", "Feito em", "Situação", "Cliente", "Telefone", "Item", "Tamanho", "Sabores", "Quantidade", "Valor unitário", "Promoção %", "Subtotal"].map(head),
-          ...sorted.flatMap((o) => o.items.map((i) => [orderNo(o.id), stamp(o.createdAt), statusLabel(o.status), o.name, o.phone, i.name, i.size, i.flavors.join(", "), int(i.qty), money(i.price), i.pct ? int(i.pct) : "", money(i.qty * i.price)])),
+          ...sorted.flatMap((o) => o.items.map((i) => [orderNo(o.id), stamp(o.createdAt), statusLabel(o.status), o.name, o.phone, i.name, i.size, i.flavors.join(", ") + (i.extras?.length ? " +" + i.extras.map((e) => e.name).join(", ") : ""), int(i.qty), money(i.price), i.pct ? int(i.pct) : "", money(i.qty * i.price)])),
         ],
       },
       {

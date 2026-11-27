@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, ChevronUp, Copy, ImagePlus, Pencil, Plus, Save, Trash2, X } from "lucide-react";
-import { fmt, type Product } from "@/lib/data";
+import { fmt, type ExtraGroup, type Product } from "@/lib/data";
 import { api, ApiError, moneyText, parseMoney, uploadPhoto } from "@/lib/admin-client";
 import type { Cat, StoreData } from "@/lib/store-data";
 import { useCatalog } from "@/components/Catalog";
@@ -206,6 +206,42 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
   );
 }
 
+/* --------------------------------------------------------- extras (adicionais) */
+function ExtrasEditor({ value, onChange }: { value: ExtraGroup[]; onChange: (g: ExtraGroup[]) => void }) {
+  const uid = () => Math.random().toString(36).slice(2, 8);
+  const patchG = (id: string, fn: (g: ExtraGroup) => ExtraGroup) => onChange(value.map((g) => (g.id === id ? fn(g) : g)));
+  return (
+    <div className="adm-f">
+      <span>Adicionais e complementos (opcional)</span>
+      {value.map((g) => (
+        <div key={g.id} className="adm-extra">
+          <div className="adm-extra-h">
+            <input aria-label="Nome do grupo" value={g.name} maxLength={40} placeholder="Ex.: Molhos, Acompanhamentos" onChange={(e) => patchG(g.id, (x) => ({ ...x, name: e.target.value }))} />
+            <button className="iconbtn iconbtn-ghost" aria-label="Remover grupo" onClick={() => onChange(value.filter((x) => x.id !== g.id))}><Trash2 size={16} /></button>
+          </div>
+          <div className="adm-extra-rules">
+            <label className="adm-switch"><input type="checkbox" checked={g.min >= 1} onChange={(e) => patchG(g.id, (x) => ({ ...x, min: e.target.checked ? 1 : 0 }))} /><span>Obrigatório</span></label>
+            <label className="adm-extra-n"><small>Mín.</small><input inputMode="numeric" aria-label="Mínimo de escolhas" value={g.min} onChange={(e) => patchG(g.id, (x) => { const n = Math.min(Number(e.target.value.replace(/\D/g, "")) || 0, x.options.length, x.max); return { ...x, min: n }; })} /></label>
+            <label className="adm-extra-n"><small>Máx.</small><input inputMode="numeric" aria-label="Máximo de escolhas" value={g.max} onChange={(e) => patchG(g.id, (x) => { const n = Math.max(1, Math.min(Number(e.target.value.replace(/\D/g, "")) || 1, x.options.length)); return { ...x, max: n, min: Math.min(x.min, n) }; })} /></label>
+          </div>
+          {g.options.map((o) => (
+            <div key={o.id} className="adm-extra-o">
+              <input aria-label="Nome da opção" value={o.name} maxLength={40} placeholder="Ex.: Bacon" onChange={(e) => patchG(g.id, (x) => ({ ...x, options: x.options.map((z) => (z.id === o.id ? { ...z, name: e.target.value } : z)) }))} />
+              <MoneyInput value={o.price} onChange={(v) => patchG(g.id, (x) => ({ ...x, options: x.options.map((z) => (z.id === o.id ? { ...z, price: v } : z)) }))} />
+              <button className="iconbtn iconbtn-ghost" aria-label="Remover opção" disabled={g.options.length <= 1} onClick={() => patchG(g.id, (x) => { const options = x.options.filter((z) => z.id !== o.id); return { ...x, options, max: Math.min(x.max, options.length), min: Math.min(x.min, options.length) }; })}><X size={16} /></button>
+            </div>
+          ))}
+          <div><button className="btn btn-ghost btn-sm" disabled={g.options.length >= 30} onClick={() => patchG(g.id, (x) => ({ ...x, options: [...x.options, { id: uid(), name: "", price: 0 }], max: x.max }))}><Plus size={15} /> <span>Adicionar opção</span></button></div>
+        </div>
+      ))}
+      {value.length < 8 && (
+        <div><button className="btn btn-outline btn-sm" onClick={() => onChange([...value, { id: uid(), name: "", min: 0, max: 1, options: [{ id: uid(), name: "", price: 0 }] }])}><Plus size={15} /> <span>Novo grupo de adicionais</span></button></div>
+      )}
+      <small className="adm-note">Cada grupo tem opções com valor (0 = sem custo). O valor das opções escolhidas soma ao preço do produto. &ldquo;Obrigatório&rdquo; exige ao menos 1 escolha; o máximo limita quantas o cliente pode marcar.</small>
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------ product form */
 function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { product: Product; cats: Cat[]; isNew: boolean; onClose: () => void; onApply: (p: Product) => void; onDelete: (id: string) => void }) {
   const [f, setF] = useState<Product>(product);
@@ -243,6 +279,8 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
     const name = f.name.trim();
     if (!name) return setErr("Dê um nome ao produto.");
     if (!hasSizes && !(f.price !== undefined && f.price >= 0)) return setErr("Informe o valor.");
+    if ((f.extras ?? []).some((g) => !g.name.trim())) return setErr("Dê um nome a cada grupo de adicionais.");
+    if ((f.extras ?? []).some((g) => !g.options.some((o) => o.name.trim()))) return setErr("Cada grupo de adicionais precisa de ao menos uma opção com nome.");
     const flavors = flavorsText.split("\n").map((s) => s.trim()).filter(Boolean);
     const out: Product = { ...f, name, desc: f.desc.trim(), flavors: flavors.length ? flavors : undefined };
     if (!flavors.length) delete out.pick;
@@ -307,6 +345,7 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
               <input inputMode="numeric" value={f.pick ?? ""} placeholder="Todos" onChange={(e) => setF({ ...f, pick: Number(e.target.value.replace(/\D/g, "")) || undefined })} />
             </label>
           )}
+          <ExtrasEditor value={f.extras ?? []} onChange={(g) => setF({ ...f, extras: g.length ? g : undefined })} />
           <label className="adm-f"><span>Selo (opcional)</span><input value={f.badge ?? ""} maxLength={20} placeholder="Ex.: Novo" onChange={(e) => setF({ ...f, badge: e.target.value })} /></label>
           <label className="adm-f">
             <span>Disponibilidade</span>

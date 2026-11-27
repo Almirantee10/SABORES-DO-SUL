@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { PAY, fmt, fmtDate } from "@/lib/data";
 import { promoPrice } from "@/lib/promo";
+import { readExtras, type PickedExtra } from "@/lib/extras";
 import { flushOutbox } from "@/lib/orders-client";
 import { useCatalog } from "./Catalog";
 
@@ -10,9 +11,12 @@ export type CartItem = {
   uid: string; pid: string; cat?: string; name: string; img: string; sizeLabel: string;
   /** promotion applied when the item was added: discount in percent and the price before it */
   pct?: number; origPrice?: number;
+  /** unit price: already includes the extras */
   price: number; qty: number; min: number; step: number; flavors: string[]; obs: string;
+  extras?: PickedExtra[];
 };
-export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string };
+/** extras = picked option keys ("groupId:optionId") */
+export type Sheet = { pid: string; size: string | null; flavors: string[]; qty: number; obs: string; extras?: string[] };
 export type Checkout = { custName: string; phone: string; delivery: "retirada" | "entrega"; address: string; mapLink: string; date: string; time: string; pay: string | null; troco: string; obsGeral: string };
 
 type Ctx = {
@@ -90,7 +94,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const p = byId[pid];
     if (!p || p.soldOut || !shopOpen) return;
     burst();
-    setSheet({ pid, size: p.sizes ? p.sizes[0].id : null, flavors: [], qty: p.min || 1, obs: "" });
+    setSheet({ pid, size: p.sizes ? p.sizes[0].id : null, flavors: [], qty: p.min || 1, obs: "", extras: [] });
   }, [byId, shopOpen]);
 
   const patchSheet = useCallback((fn: (s: Sheet) => Partial<Sheet>) => {
@@ -104,14 +108,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (p.soldOut) { showToast(p.name + " está esgotado."); return; }
     if (p.flavors && !s.flavors.length) return;
     const z = p.sizes?.find((x) => x.id === s.size) || null;
+    const ex = readExtras(p, s.extras ?? []);
+    if (ex.problem) { showToast(ex.problem); return; }
     const item: CartItem = {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
       pid: p.id, cat: p.cat, name: p.name, img: p.img,
       sizeLabel: z ? (z.id === "porcao" || z.id === "pacote" ? `${z.label} de ${z.sub.replace(" unidades", " un.")}` : z.label) : "",
-      price: promoPrice((z ? z.price : p.price) as number, promoPct(p.id)), pct: promoPct(p.id) || undefined,
-      origPrice: promoPct(p.id) ? ((z ? z.price : p.price) as number) : undefined, qty: s.qty,
+      // extras are not discounted by a promotion
+      price: Math.round((promoPrice((z ? z.price : p.price) as number, promoPct(p.id)) + ex.sum) * 100) / 100, pct: promoPct(p.id) || undefined,
+      origPrice: promoPct(p.id) ? ((z ? z.price : p.price) as number) + ex.sum : undefined, qty: s.qty,
       min: z ? 1 : p.min || 1, step: z ? 1 : p.step || 1,
       flavors: s.flavors.slice(), obs: s.obs || "",
+      extras: ex.chosen.length ? ex.chosen : undefined,
     };
     setCart((c) => c.concat([item]));
     burst();
@@ -141,6 +149,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const icon = it.pid.startsWith("pq-") ? "🧀" : ICON[cat] ?? "🍴";
       L.push("", `${icon} *${title}${it.sizeLabel ? " · " + it.sizeLabel : ""}*`);
       it.flavors.forEach((f) => L.push("   • " + f));
+      (it.extras ?? []).forEach((e) => L.push(`   ➕ ${e.name}${e.price > 0 ? ` (+${fmt(e.price)})` : ""}`));
       L.push(`   ${it.qty} × ${fmt(it.price)} = ${fmt(it.qty * it.price)}${it.pct ? ` (promoção -${it.pct}%)` : ""}`);
       if (it.obs.trim()) L.push("   📝 Obs.: " + it.obs.trim());
     });

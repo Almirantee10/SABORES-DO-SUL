@@ -13,6 +13,9 @@ export const img = (n: string) => `/assets/photos/${n}.png`;
 export const photo = (n: string) => `/assets/photos/${n}.jpg`;
 
 export type Size = { id: string; label: string; sub: string; price: number; max?: number };
+/** Extras the customer can add to a product (e.g. "Molhos": barbecue +R$ 2,00). min >= 1 makes the group required. */
+export type ExtraOption = { id: string; name: string; price: number };
+export type ExtraGroup = { id: string; name: string; min: number; max: number; options: ExtraOption[] };
 export type Product = {
   id: string;
   cat: string;
@@ -29,6 +32,7 @@ export type Product = {
   /** with soldOut: paused for a while, shown as "Pausado" instead of "Esgotado" */
   paused?: boolean;
   sizes?: Size[];
+  extras?: ExtraGroup[];
   flavors?: string[];
   pick?: number;
   price?: number;

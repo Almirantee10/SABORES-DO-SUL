@@ -27,7 +27,7 @@ export async function recordOrder(cart: CartItem[], c: Checkout) {
   const body = {
     name: c.custName, phone: c.phone, delivery: c.delivery, address: c.address, mapLink: c.mapLink,
     date: c.date, time: c.time, pay: c.pay, troco: c.troco, notes: c.obsGeral,
-    items: cart.map((i) => ({ pid: i.pid, name: i.name, size: i.sizeLabel, qty: i.qty, price: i.price, pct: i.pct ?? 0, flavors: i.flavors, obs: i.obs })),
+    items: cart.map((i) => ({ pid: i.pid, name: i.name, size: i.sizeLabel, qty: i.qty, price: i.price, pct: i.pct ?? 0, flavors: i.flavors, extras: i.extras ?? [], obs: i.obs })),
   };
   if (await post(body)) return;
   await new Promise((r) => setTimeout(r, 2500));
