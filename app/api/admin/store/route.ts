@@ -1,4 +1,4 @@
-﻿import { isAdmin, sameOrigin } from "@/lib/server/auth";
+import { isAdmin, sameOrigin } from "@/lib/server/auth";
 import { readStore, writeStore } from "@/lib/server/storage";
 import { sanitizeStore } from "@/lib/server/validate";
 
@@ -23,6 +23,15 @@ export async function PUT(req: Request) {
     res.data.closedMessage = current.closedMessage;
     res.data.promos = current.promos;
     res.data.cats = current.cats;
+    res.data.extras = current.extras;
+    const known = new Set(current.extras.map((g) => g.id));
+    res.data.products = res.data.products.map((p) => {
+      if (!p.extraIds) return p;
+      const ids = p.extraIds.filter((id) => known.has(id));
+      const { extraIds: _x, ...rest } = p;
+      void _x;
+      return ids.length ? { ...rest, extraIds: ids } : rest;
+    });
     res.data.settings = current.settings;
     await writeStore(res.data);
     return Response.json(res.data);

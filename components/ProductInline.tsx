@@ -14,7 +14,7 @@ import { Badge, Field, OptionRow, QuantityStepper, Thumb } from "./ui";
 /** A product with every choice (size, flavors, quantity) open on the card. */
 export function ProductInline({ p }: { p: Product }) {
   const { addDirect } = useStore();
-  const { open: shopOpen, ready, promoPct } = useCatalog();
+  const { open: shopOpen, ready, promoPct, extras: shared } = useCatalog();
   const pct = promoPct(p.id);
   const [size, setSize] = useState<string | null>(p.sizes ? p.sizes[0].id : null);
   const [flavors, setFlavors] = useState<string[]>([]);
@@ -25,7 +25,7 @@ export function ProductInline({ p }: { p: Product }) {
   // the menu can change while this card is on screen (price, sizes, flavors)
   const z = p.sizes?.find((x) => x.id === size) || p.sizes?.[0] || null;
   const [extras, setExtras] = useState<string[]>([]);
-  const ex = readExtras(p, extras);
+  const ex = readExtras(p, extras, shared);
   // extras are not discounted by a promotion
   const unit = promoPrice((z ? z.price : p.price) as number, pct) + ex.sum;
   const max = maxFlavors(p, z ? z.id : null);
@@ -89,7 +89,7 @@ export function ProductInline({ p }: { p: Product }) {
         </div>
       )}
 
-      <ExtrasPicker p={p} picked={extras} onChange={setExtras} />
+      <ExtrasPicker p={p} shared={shared} picked={extras} onChange={setExtras} />
 
       <div className="pi-foot">
         {p.ask && <Field label={p.ask} placeholder="Ex.: uva, laranja, maracujá" value={obs} onChange={(e) => setObs(e.target.value)} />}

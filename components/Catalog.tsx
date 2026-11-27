@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { Product } from "@/lib/data";
+import type { ExtraGroup, Product } from "@/lib/data";
 import { percentFor, promoState, todayStr, type Promo } from "@/lib/promo";
 import { scheduleOpen } from "@/lib/schedule";
 import { defaultStore, type Cat, type Settings, type StoreData } from "@/lib/store-data";
@@ -17,6 +17,8 @@ type Ctx = {
   open: boolean;
   closedMessage: string;
   cats: Cat[];
+  /** shared groups of extras */
+  extras: ExtraGroup[];
   settings: Settings;
   /** false until the live menu arrived (or failed), so nobody orders at an out-of-date price */
   ready: boolean;
@@ -82,6 +84,7 @@ export function CatalogProvider({ children }: { children: React.ReactNode }) {
       open: data.open !== false && schedOpen,
       closedMessage: data.closedMessage || "",
       cats: data.cats,
+      extras: data.extras ?? [],
       settings: data.settings,
       ready,
       refresh,

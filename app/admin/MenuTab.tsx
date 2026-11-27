@@ -15,8 +15,7 @@ const withAvail = (p: Product, v: string): Product => {
 };
 const newProduct = (cat: string): Product => ({ id: "novo-" + Date.now().toString(36), cat, name: "", desc: "", img: "", price: 0 });
 
-export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" | "adicionais"; onSignedOut: () => void }) {
-  const extrasMode = mode === "adicionais";
+export function MenuTab({ onSignedOut }: { onSignedOut: () => void }) {
   const catalog = useCatalog();
   const [draft, setDraft] = useState<Product[] | null>(null);
   const [savedJson, setSavedJson] = useState("");
@@ -24,6 +23,9 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [saving, setSaving] = useState(false);
   const [cats, setCats] = useState<Cat[]>(catalog.cats);
+  const [shared, setShared] = useState<ExtraGroup[]>(catalog.extras);
+  const [q, setQ] = useState("");
+  const [catFilter, setCatFilter] = useState("");
 
   // always edit the latest saved menu, not a possibly stale copy
   useEffect(() => {
@@ -35,6 +37,7 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
         setDraft(d.products);
         setSavedJson(JSON.stringify(d.products));
         if (Array.isArray(d.cats) && d.cats.length) setCats(d.cats);
+        if (Array.isArray(d.extras)) setShared(d.extras);
       } catch {
         if (live) setMsg({ ok: false, text: "Não foi possível carregar o cardápio. Atualize a página." });
       }
@@ -110,13 +113,26 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
       const copy: Product = { ...JSON.parse(JSON.stringify(src)), id: "novo-" + Date.now().toString(36), name: src.name + " (cópia)" };
       return [...d.slice(0, i + 1), copy, ...d.slice(i + 1)];
     });
-  const byCat = useMemo(() => cats.map((c) => ({ ...c, items: (draft ?? []).filter((p) => p.cat === c.id) })), [draft, cats]);
+  const byCat = useMemo(() => {
+    const k = q.trim().toLowerCase();
+    return cats
+      .filter((c) => !catFilter || c.id === catFilter)
+      .map((c) => ({ ...c, items: (draft ?? []).filter((p) => p.cat === c.id && (!k || (p.name + " " + p.desc).toLowerCase().includes(k))) }));
+  }, [draft, cats, q, catFilter]);
 
   return (
     <div className="adm-pane">
-      <p className="adm-note">{extrasMode ? "Escolha o produto e toque em Editar para criar ou mudar os grupos de adicionais e complementos dele (molhos, acompanhamentos, extras)." : "Mude valores, marque indisponíveis, destaque, duplique, reordene e adicione produtos. Para abrir ou fechar a loja, use a aba Configurações."}</p>
+      <p className="adm-note">Mude valores, marque indisponíveis, destaque, duplique, reordene e adicione produtos. Para abrir ou fechar a loja, use a aba Configurações.</p>
 
       {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
+
+      <div className="crm-filters">
+        <label className="search"><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar produto" aria-label="Buscar produto" /></label>
+        <select value={catFilter} onChange={(e) => setCatFilter(e.target.value)} aria-label="Categoria">
+          <option value="">Todas as categorias</option>
+          {cats.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+        </select>
+      </div>
 
       {!draft ? (
         <p className="adm-note">Carregando cardápio…</p>
@@ -125,7 +141,7 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
           <section key={c.id} className="adm-card">
             <div className="adm-cat">
               <h2>{c.title}</h2>
-              {!extrasMode && <button className="btn btn-outline btn-sm" onClick={() => setEditing(newProduct(c.id))}><Plus size={16} /> <span>Adicionar produto</span></button>}
+              <button className="btn btn-outline btn-sm" onClick={() => setEditing(newProduct(c.id))}><Plus size={16} /> <span>Adicionar produto</span></button>
             </div>
             {c.items.length === 0 && <p className="adm-note">Nenhum produto nesta categoria.</p>}
             {c.items.map((p, idx) => (
@@ -133,8 +149,7 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
                 <Thumb src={p.img} size={56} icon={24} />
                 <div className="adm-info">
                   <b>{p.name || "(sem nome)"}</b>
-                  {extrasMode && <small className="adm-note">{p.extras?.length ? p.extras.map((g) => `${g.name} (${g.options.length}${g.min ? ", obrigatório" : ""})`).join(" · ") : "Sem adicionais"}</small>}
-                  <div className="adm-prices" hidden={extrasMode}>
+                  <div className="adm-prices">
                     {p.sizes
                       ? p.sizes.map((s, i) => (
                           <label key={s.id}>
@@ -151,7 +166,6 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
                   </div>
                 </div>
                 <div className="adm-actions">
-                  {extrasMode ? null : <>
                   <input key={`${p.id}-${idx}`} className="adm-pos" inputMode="numeric" aria-label={`Posição de ${p.name}`} title="Posição na categoria" defaultValue={idx + 1} onBlur={(e) => moveTo(p.id, Number(e.target.value))} onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }} />
                   <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={idx === 0} onClick={() => move(p.id, -1)}><ChevronUp size={18} /></button>
                   <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={idx === c.items.length - 1} onClick={() => move(p.id, 1)}><ChevronDown size={18} /></button>
@@ -162,7 +176,6 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
                     <option value="out">Indisponível</option>
                     <option value="pause">Pausado</option>
                   </select>
-                  </>}
                   <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}><Pencil size={15} /> <span>Editar</span></button>
                 </div>
               </div>
@@ -181,6 +194,7 @@ export function MenuTab({ mode = "produtos", onSignedOut }: { mode?: "produtos" 
 
       {editing && (
         <ProductModal
+          shared={shared}
           product={editing}
           cats={cats}
           isNew={!draft?.some((p) => p.id === editing.id)}
@@ -227,12 +241,12 @@ function MoneyInput({ value, onChange }: { value: number; onChange: (v: number) 
 }
 
 /* --------------------------------------------------------- extras (adicionais) */
-function ExtrasEditor({ value, onChange }: { value: ExtraGroup[]; onChange: (g: ExtraGroup[]) => void }) {
+export function ExtrasEditor({ value, onChange, single = false }: { value: ExtraGroup[]; onChange: (g: ExtraGroup[]) => void; single?: boolean }) {
   const uid = () => Math.random().toString(36).slice(2, 8);
   const patchG = (id: string, fn: (g: ExtraGroup) => ExtraGroup) => onChange(value.map((g) => (g.id === id ? fn(g) : g)));
   return (
     <div className="adm-f">
-      <span>Adicionais e complementos (opcional)</span>
+      {!single && <span>Adicionais e complementos (opcional)</span>}
       {value.map((g) => (
         <div key={g.id} className="adm-extra">
           <div className="adm-extra-h">
@@ -254,16 +268,16 @@ function ExtrasEditor({ value, onChange }: { value: ExtraGroup[]; onChange: (g: 
           <div><button className="btn btn-ghost btn-sm" disabled={g.options.length >= 30} onClick={() => patchG(g.id, (x) => ({ ...x, options: [...x.options, { id: uid(), name: "", price: 0 }], max: x.max }))}><Plus size={15} /> <span>Adicionar opção</span></button></div>
         </div>
       ))}
-      {value.length < 8 && (
+      {!single && value.length < 8 && (
         <div><button className="btn btn-outline btn-sm" onClick={() => onChange([...value, { id: uid(), name: "", min: 0, max: 1, options: [{ id: uid(), name: "", price: 0 }] }])}><Plus size={15} /> <span>Novo grupo de adicionais</span></button></div>
       )}
-      <small className="adm-note">Cada grupo tem opções com valor (0 = sem custo). O valor das opções escolhidas soma ao preço do produto. &ldquo;Obrigatório&rdquo; exige ao menos 1 escolha; o máximo limita quantas o cliente pode marcar.</small>
+      {!single && <small className="adm-note">Cada grupo tem opções com valor (0 = sem custo). O valor das opções escolhidas soma ao preço do produto. &ldquo;Obrigatório&rdquo; exige ao menos 1 escolha; o máximo limita quantas o cliente pode marcar.</small>}
     </div>
   );
 }
 
 /* ------------------------------------------------------------ product form */
-function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { product: Product; cats: Cat[]; isNew: boolean; onClose: () => void; onApply: (p: Product) => void; onDelete: (id: string) => void }) {
+function ProductModal({ shared, product, cats, isNew, onClose, onApply, onDelete }: { shared: ExtraGroup[]; product: Product; cats: Cat[]; isNew: boolean; onClose: () => void; onApply: (p: Product) => void; onDelete: (id: string) => void }) {
   const [f, setF] = useState<Product>(product);
   const [flavorsText, setFlavorsText] = useState((product.flavors ?? []).join("\n"));
   const [err, setErr] = useState("");
@@ -375,6 +389,17 @@ function ProductModal({ product, cats, isNew, onClose, onApply, onDelete }: { pr
             </label>
           )}
           <ExtrasEditor value={f.extras ?? []} onChange={(g) => setF({ ...f, extras: g.length ? g : undefined })} />
+          {shared.length > 0 && (
+            <div className="adm-f">
+              <span>Adicionais compartilhados (aba Adicionais)</span>
+              {shared.map((g) => (
+                <label key={g.id} className="adm-switch">
+                  <input type="checkbox" checked={(f.extraIds ?? []).includes(g.id)} onChange={(e) => { const cur = f.extraIds ?? []; const next = e.target.checked ? [...cur, g.id] : cur.filter((x) => x !== g.id); setF({ ...f, extraIds: next.length ? next : undefined }); }} />
+                  <span>{g.name} ({g.options.length} opç{g.options.length === 1 ? "ão" : "ões"}{g.min ? ", obrigatório" : ""})</span>
+                </label>
+              ))}
+            </div>
+          )}
           <label className="adm-f"><span>Selo (opcional)</span><input value={f.badge ?? ""} maxLength={20} placeholder="Ex.: Novo" onChange={(e) => setF({ ...f, badge: e.target.value })} /></label>
           <label className="adm-switch">
             <input type="checkbox" checked={!!f.featured} onChange={(e) => setF({ ...f, featured: e.target.checked })} />

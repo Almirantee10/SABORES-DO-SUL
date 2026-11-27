@@ -702,3 +702,8 @@ input[type=date],input[type=time]{color-scheme:dark}
 
 .ord-foot{flex-wrap:wrap;gap:6px}
 .ord-foot .adm-del{margin-left:auto}
+
+.adm-tag-freq{margin-left:8px;font:600 10px/1 var(--font-label);letter-spacing:.06em;text-transform:uppercase;background:var(--sds-gold-500);color:var(--sds-espresso-900);border-radius:999px;padding:3px 8px;vertical-align:middle}
+
+.adm-top-r{display:flex;align-items:center;gap:10px}
+.adm-areas .dot{margin-left:6px;font-style:normal;background:var(--sds-gold-500);color:var(--sds-espresso-900);border-radius:999px;padding:1px 7px;font:700 11px/1.4 var(--font-label)}

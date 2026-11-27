@@ -75,7 +75,7 @@ export function CatsTab({ onSignedOut }: { onSignedOut: () => void }) {
 
   return (
     <div className="adm-pane">
-      <p className="adm-note">Crie, renomeie, reordene e exclua categorias. A ordem daqui é a ordem do cardápio. Uma categoria sem produtos não aparece para os clientes.</p>
+      <p className="adm-note">Crie, renomeie, reordene e exclua categorias. A ordem daqui é a ordem do cardápio. Uma categoria sem produtos, ou desmarcada em Visível, não aparece para os clientes.</p>
       {msg && <p className={msg.ok ? "adm-ok" : "adm-err"} role="status">{msg.text}</p>}
       {!rows ? (
         <p className="adm-note">Carregando…</p>
@@ -88,6 +88,7 @@ export function CatsTab({ onSignedOut }: { onSignedOut: () => void }) {
                 <div className="adm-cat">
                   <h2>{c.title || "Nova categoria"}</h2>
                   <div className="adm-actions">
+                    <label className="adm-switch"><input type="checkbox" checked={c.visible !== false} onChange={(e) => patch(c.k, (x) => ({ ...x, visible: e.target.checked ? undefined : false }))} /><span>Visível</span></label>
                     <button className="iconbtn iconbtn-ghost" aria-label="Subir" disabled={i === 0} onClick={() => move(i, -1)}><ChevronUp size={18} /></button>
                     <button className="iconbtn iconbtn-ghost" aria-label="Descer" disabled={i === rows.length - 1} onClick={() => move(i, 1)}><ChevronDown size={18} /></button>
                     <button

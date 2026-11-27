@@ -1,15 +1,16 @@
 "use client";
 
-import { fmt, type Product } from "@/lib/data";
-import { extraKey } from "@/lib/extras";
+import { fmt, type ExtraGroup, type Product } from "@/lib/data";
+import { extraKey, groupsOf } from "@/lib/extras";
 import { OptionRow } from "./ui";
 
 /** The product's extras, one block per group; the group's minimum and maximum decide what can be picked. */
-export function ExtrasPicker({ p, picked, onChange }: { p: Product; picked: string[]; onChange: (next: string[]) => void }) {
-  if (!p.extras?.length) return null;
+export function ExtrasPicker({ p, shared, picked, onChange }: { p: Product; shared: ExtraGroup[]; picked: string[]; onChange: (next: string[]) => void }) {
+  const groups = groupsOf(p, shared);
+  if (!groups.length) return null;
   return (
     <>
-      {p.extras.map((g) => {
+      {groups.map((g) => {
         const keys = g.options.map((o) => extraKey(g.id, o.id));
         const n = keys.filter((k) => picked.includes(k)).length;
         const single = g.max === 1;

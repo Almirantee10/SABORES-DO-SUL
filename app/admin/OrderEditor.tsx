@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Plus, Trash2, X } from "lucide-react";
 import { PAY, fmt } from "@/lib/data";
 import { api, ApiError, moneyText, parseMoney } from "@/lib/admin-client";
-import type { Order, OrderItem } from "@/lib/orders";
+import { statusLabel, type Order, type OrderItem } from "@/lib/orders";
 
 type Line = { key: string; item: OrderItem; price: string };
 
@@ -13,7 +13,7 @@ export function OrderEditor({ order, onClose, onSaved, onSignedOut }: { order: O
   const [f, setF] = useState({
     name: order.name, phone: order.phone, delivery: order.delivery, address: order.address, mapLink: order.mapLink,
     date: order.date, time: order.time, pay: order.pay, troco: order.troco, notes: order.notes,
-    fee: moneyText(order.fee ?? 0), payStatus: order.payStatus === "pago" ? "pago" : "pendente",
+    fee: moneyText(order.fee ?? 0), discount: order.discount ? moneyText(order.discount) : "", payStatus: order.payStatus === "pago" ? "pago" : "pendente",
   });
   const [lines, setLines] = useState<Line[]>(() => order.items.map((item, i) => ({ key: "l" + i, item, price: moneyText(item.price) })));
   const [err, setErr] = useState("");
@@ -28,18 +28,20 @@ export function OrderEditor({ order, onClose, onSaved, onSignedOut }: { order: O
   }, [onClose]);
 
   const fee = f.fee.trim() ? parseMoney(f.fee) : 0;
-  const total = lines.reduce((a, l) => a + l.item.qty * (parseMoney(l.price) ?? 0), 0) + (fee ?? 0);
+  const discount = f.discount.trim() ? parseMoney(f.discount) : 0;
+  const total = Math.max(0, lines.reduce((a, l) => a + l.item.qty * (parseMoney(l.price) ?? 0), 0) + (fee ?? 0) - (discount ?? 0));
   const patchLine = (key: string, fn: (l: Line) => Line) => setLines((ls) => ls.map((l) => (l.key === key ? fn(l) : l)));
 
   const save = async () => {
     setErr("");
     if (fee === null) return setErr("Taxa de entrega inválida.");
+    if (discount === null) return setErr("Desconto inválido.");
     if (lines.some((l) => parseMoney(l.price) === null)) return setErr("Confira o valor de cada item.");
     setBusy(true);
     try {
       await api("/api/admin/orders", "PUT", {
         id: order.id,
-        edit: { ...f, fee, items: lines.map((l) => ({ ...l.item, price: parseMoney(l.price) ?? 0 })) },
+        edit: { ...f, fee, discount, items: lines.map((l) => ({ ...l.item, price: parseMoney(l.price) ?? 0 })) },
       });
       onSaved();
     } catch (e) {
@@ -120,9 +122,18 @@ export function OrderEditor({ order, onClose, onSaved, onSignedOut }: { order: O
             </div>
           </div>
 
-          <label className="adm-f"><span>Taxa de entrega (R$)</span><input inputMode="decimal" value={f.fee} onChange={(e) => setF({ ...f, fee: e.target.value })} /></label>
+          <div className="adm-two">
+            <label className="adm-f"><span>Taxa de entrega (R$)</span><input inputMode="decimal" value={f.fee} onChange={(e) => setF({ ...f, fee: e.target.value })} /></label>
+            <label className="adm-f"><span>Desconto no pedido (R$)</span><input inputMode="decimal" value={f.discount} placeholder="0,00" onChange={(e) => setF({ ...f, discount: e.target.value })} /></label>
+          </div>
           <label className="adm-f"><span>Observações do pedido</span><textarea rows={2} value={f.notes} maxLength={300} onChange={(e) => setF({ ...f, notes: e.target.value })} /></label>
-          <p className="adm-note"><b>Total: {fmt(total)}</b> (itens + taxa). O total é recalculado ao salvar.</p>
+          <p className="adm-note"><b>Total: {fmt(total)}</b> (itens + taxa - desconto). O total é recalculado ao salvar.</p>
+          <div className="adm-f">
+            <span>Linha do tempo</span>
+            {(order.history?.length ? order.history : [{ status: "novo" as const, at: order.createdAt }]).map((h, i) => (
+              <small key={i} className="adm-note">{statusLabel(h.status)} · {new Date(h.at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</small>
+            ))}
+          </div>
           {err && <p className="adm-err" role="alert">{err}</p>}
         </div>
         <div className="adm-sheet-f">

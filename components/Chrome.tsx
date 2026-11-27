@@ -189,12 +189,12 @@ function BottomSheet({ title, onClose, children, footer }: { title: string; onCl
 /* ----------------------------------------------------------- ProductSheet */
 export function ProductSheet() {
   const { sheet, patchSheet, closeSheet, addToCart } = useStore();
-  const { byId, promoPct } = useCatalog();
+  const { byId, promoPct, extras: shared } = useCatalog();
   if (!sheet) return null;
   const p = byId[sheet.pid];
   if (!p) return null;
   const z = p.sizes?.find((x) => x.id === sheet.size) || null;
-  const ex = readExtras(p, sheet.extras ?? []);
+  const ex = readExtras(p, sheet.extras ?? [], shared);
   const unitPrice = promoPrice((z ? z.price : p.price) as number, promoPct(p.id)) + ex.sum;
   const max = maxFlavors(p, sheet.size);
   const chosen = sheet.flavors;
@@ -241,7 +241,7 @@ export function ProductSheet() {
           })}
         </div>
       )}
-      <ExtrasPicker p={p} picked={sheet.extras ?? []} onChange={(next) => patchSheet(() => ({ extras: next }))} />
+      <ExtrasPicker p={p} shared={shared} picked={sheet.extras ?? []} onChange={(next) => patchSheet(() => ({ extras: next }))} />
       <div className="qty-row">
         <div><span className="lbl">Quantidade</span><small>{qtyHint}</small></div>
         <QuantityStepper value={sheet.qty} min={min} step={step} onChange={(v) => patchSheet(() => ({ qty: v }))} />

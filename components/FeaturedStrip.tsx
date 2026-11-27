@@ -9,8 +9,9 @@ import { Thumb } from "./ui";
 
 /** "Destaques": the products the owner starred, plus any product in a running promotion. Nothing is drawn when there are none. */
 export function FeaturedStrip() {
-  const { products, promoPct } = useCatalog();
-  const list = products.filter((p) => !p.soldOut && (p.featured || promoPct(p.id) > 0));
+  const { products, promoPct, cats } = useCatalog();
+  const hidden = new Set(cats.filter((c) => c.visible === false).map((c) => c.id));
+  const list = products.filter((p) => !p.soldOut && !hidden.has(p.cat) && (p.featured || promoPct(p.id) > 0));
   if (!list.length) return null;
   return (
     <section className="feat" aria-label="Destaques">

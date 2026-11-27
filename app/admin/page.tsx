@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { BarChart3, ClipboardList, FileText, KeyRound, LayoutDashboard, LayoutList, ListPlus, Lock, LogOut, Settings, Tag, Users, UtensilsCrossed } from "lucide-react";
 import { api, ApiError } from "@/lib/admin-client";
+import { useCatalog } from "@/components/Catalog";
 import { AccessTab } from "./AccessTab";
+import { AdicionaisTab } from "./AdicionaisTab";
 import { CatsTab } from "./CatsTab";
 import { CrmTab, type CrmView } from "./CrmTab";
 import { LojaTab } from "./LojaTab";
@@ -97,6 +99,46 @@ const AREAS = [
 
 function Shell({ user, onSignedOut }: { user: string; onSignedOut: () => void }) {
   const [area, setArea] = useState<Area>("dashboard");
+  const catalog = useCatalog();
+  const [manual, setManual] = useState<boolean | null>(null); // the owner's own open/closed switch
+  const [closedMsg, setClosedMsg] = useState("");
+  const [novos, setNovos] = useState(0);
+  const [togglingShop, setTogglingShop] = useState(false);
+
+  // shop switch + number of new orders for the badge (checked again every 30 s)
+  useEffect(() => {
+    let live = true;
+    const tick = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const d = await api<{ orders: { status: string }[] }>("/api/admin/orders", "GET");
+        if (live) setNovos(d.orders.filter((o) => o.status === "novo").length);
+      } catch {}
+    };
+    (async () => {
+      try {
+        const d = await api<{ open: boolean; closedMessage: string }>("/api/store", "GET");
+        if (live) { setManual(d.open !== false); setClosedMsg(d.closedMessage || ""); }
+      } catch {}
+    })();
+    void tick();
+    const t = setInterval(tick, 30_000);
+    return () => { live = false; clearInterval(t); };
+  }, []);
+
+  const toggleShop = async () => {
+    if (manual === null || togglingShop) return;
+    setTogglingShop(true);
+    try {
+      const d = await api<{ open: boolean; closedMessage: string }>("/api/admin/status", "PUT", { open: !manual, closedMessage: closedMsg });
+      setManual(d.open);
+      catalog.apply({ open: d.open, closedMessage: d.closedMessage });
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) onSignedOut();
+    } finally {
+      setTogglingShop(false);
+    }
+  };
 
   const signOut = async () => {
     try { await api("/api/admin/logout", "POST", {}); } catch {}
@@ -107,20 +149,28 @@ function Shell({ user, onSignedOut }: { user: string; onSignedOut: () => void })
     <div className="adm">
       <header className="adm-top">
         <h1>Painel do administrador</h1>
-        <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> <span>Sair</span></button>
+        <div className="adm-top-r">
+          {manual !== null && (
+            <button className={`shop-pill ${catalog.open ? "is-open" : "is-closed"}`} onClick={toggleShop} disabled={togglingShop} title="Toque para abrir ou fechar a loja" aria-label={manual ? "Fechar a loja" : "Abrir a loja"}>
+              <i aria-hidden />
+              {manual ? (catalog.open ? "Loja aberta" : "Fora do horário") : "Loja fechada"}
+            </button>
+          )}
+          <button className="btn btn-ghost btn-sm" onClick={signOut}><LogOut size={16} /> <span>Sair</span></button>
+        </div>
       </header>
 
       <nav className="adm-areas" aria-label="Áreas do painel">
         {AREAS.map(({ id, label, Icon }) => (
           <button key={id} className={area === id ? "on" : ""} aria-current={area === id ? "page" : undefined} onClick={() => setArea(id)}>
-            <Icon size={18} /> <span>{label}</span>
+            <Icon size={18} /> <span>{label}</span>{id === "pedidos" && novos > 0 ? <em className="dot">{novos}</em> : null}
           </button>
         ))}
       </nav>
 
       {(area === "dashboard" || area === "pedidos" || area === "clientes" || area === "faturamento" || area === "relatorios") && <CrmTab key={area} view={area as CrmView} onSignedOut={onSignedOut} />}
       {area === "produtos" && <MenuTab onSignedOut={onSignedOut} />}
-      {area === "adicionais" && <MenuTab mode="adicionais" onSignedOut={onSignedOut} />}
+      {area === "adicionais" && <AdicionaisTab onSignedOut={onSignedOut} />}
       {area === "categorias" && <CatsTab onSignedOut={onSignedOut} />}
       {area === "promocoes" && <PromoTab onSignedOut={onSignedOut} />}
       {area === "configuracoes" && <LojaTab onSignedOut={onSignedOut} />}      {area === "acesso" && <AccessTab user={user} onChanged={() => void 0} onSignedOut={onSignedOut} />}

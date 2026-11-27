@@ -41,12 +41,14 @@ export function sanitizeEdit(raw: unknown): { ok: true; patch: Partial<Order> } 
   const fee = num(r.fee ?? 0, 0, 999);
   if (fee === null) return { ok: false, error: "taxa de entrega inválida" };
 
-  const total = Math.round((items.reduce((a, i) => a + i.qty * i.price, 0) + fee) * 100) / 100;
+  const discount = num(r.discount ?? 0, 0, 99999);
+  if (discount === null) return { ok: false, error: "desconto inválido" };
+  const total = Math.max(0, Math.round((items.reduce((a, i) => a + i.qty * i.price, 0) + fee - discount) * 100) / 100);
   return {
     ok: true,
     patch: {
       name, phone, delivery: r.delivery === "entrega" ? "entrega" : "retirada", address: text(r.address, 200), mapLink, date, time, pay,
-      troco: text(r.troco, 30), notes: text(r.notes, 300), items, fee, total,
+      troco: text(r.troco, 30), notes: text(r.notes, 300), items, fee, discount, total,
       payStatus: r.payStatus === "pago" ? "pago" : "pendente",
     },
   };

@@ -16,7 +16,7 @@ export default function Cardapio() {
   const { products, cats, settings } = useCatalog();
   const [tab, setTab] = useState("");
   // a category with no products is not shown to customers
-  const CATS = cats.filter((c) => products.some((p) => p.cat === c.id));
+  const CATS = cats.filter((c) => c.visible !== false && products.some((p) => p.cat === c.id));
   const root = useRef<HTMLDivElement>(null);
   const lock = useRef(0);
 

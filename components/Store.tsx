@@ -73,7 +73,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
   const [last, setLast] = useState<Sheet[] | null>(null);
   const tt = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const { byId, open: shopOpen, promoPct, settings } = useCatalog();
+  const { byId, open: shopOpen, promoPct, settings, extras: shared } = useCatalog();
 
   useEffect(() => {
     /* eslint-disable react-hooks/set-state-in-effect -- restoring the saved cart after hydration */
@@ -122,7 +122,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (p.soldOut) { showToast(p.name + " está esgotado."); return; }
     if (p.flavors && !s.flavors.length) return;
     const z = p.sizes?.find((x) => x.id === s.size) || null;
-    const ex = readExtras(p, s.extras ?? []);
+    const ex = readExtras(p, s.extras ?? [], shared);
     if (ex.problem) { showToast(ex.problem); return; }
     const item: CartItem = {
       uid: Date.now() + "-" + Math.random().toString(36).slice(2, 6),
@@ -139,7 +139,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     setCart((c) => c.concat([item]));
     burst();
     showToast(p.name + " adicionado ao pedido!");
-  }, [showToast, byId, shopOpen, promoPct]);
+  }, [showToast, byId, shopOpen, promoPct, shared]);
 
   const addToCart = useCallback(() => {
     if (!sheet) return;

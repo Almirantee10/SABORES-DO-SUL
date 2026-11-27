@@ -79,31 +79,14 @@ function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product 
   }
 
   if (Array.isArray(r.extras) && r.extras.length) {
-    if (r.extras.length > 8) return `"${name}": no máximo 8 grupos de adicionais`;
-    const groups: ExtraGroup[] = [];
-    for (let gi = 0; gi < r.extras.length; gi++) {
-      const g = (r.extras[gi] && typeof r.extras[gi] === "object" ? r.extras[gi] : {}) as Record<string, unknown>;
-      const gname = str(g.name, 40);
-      if (!gname) return `"${name}": todo grupo de adicionais precisa de um nome`;
-      const rawOpts = Array.isArray(g.options) ? g.options.slice(0, 30) : [];
-      const options: ExtraOption[] = [];
-      for (let oi = 0; oi < rawOpts.length; oi++) {
-        const o = (rawOpts[oi] && typeof rawOpts[oi] === "object" ? rawOpts[oi] : {}) as Record<string, unknown>;
-        const oname = str(o.name, 40);
-        if (!oname) continue; // an empty line is just dropped
-        const price = num(o.price ?? 0, 0, 999);
-        if (price === null) return `"${name}": valor inválido em "${oname}"`;
-        options.push({ id: `o${oi + 1}`, name: oname, price });
-      }
-      if (!options.length) return `"${name}": o grupo "${gname}" precisa de ao menos uma opção`;
-      const max = int(g.max, 1, options.length) ?? options.length;
-      const min = int(g.min ?? 0, 0, max);
-      if (min === null) return `"${name}": o mínimo de "${gname}" não pode passar do máximo`;
-      groups.push({ id: `g${gi + 1}`, name: gname, min, max, options });
-    }
-    out.extras = groups;
+    const g = extraGroups(r.extras, `"${name}"`, "g");
+    if (typeof g === "string") return g;
+    out.extras = g;
   }
-
+  if (Array.isArray(r.extraIds)) {
+    const ids = [...new Set(r.extraIds.map((x) => slug(str(x, 40))).filter(Boolean))].slice(0, 20);
+    if (ids.length) out.extraIds = ids;
+  }
   if (Array.isArray(r.flavors) && r.flavors.length) {
     const flavors = r.flavors.map((f) => str(f, 60)).filter(Boolean).slice(0, 60);
     if (flavors.length) out.flavors = flavors;
@@ -113,6 +96,45 @@ function product(raw: unknown, used: Set<string>, catIds: Set<string>): Product 
   return out;
 }
 
+/** Groups of extras (own or shared): names, options with prices, minimum and maximum. Returns the groups or a message in Portuguese. */
+export function extraGroups(raw: unknown[], ctx: string, prefix: "g" | "x"): ExtraGroup[] | string {
+  if (raw.length > 12) return `${ctx}: no máximo 12 grupos de adicionais`;
+  const groups: ExtraGroup[] = [];
+  const used = new Set<string>();
+  for (let gi = 0; gi < raw.length; gi++) {
+    const g = (raw[gi] && typeof raw[gi] === "object" ? raw[gi] : {}) as Record<string, unknown>;
+    const gname = str(g.name, 40);
+    if (!gname) return `${ctx}: todo grupo de adicionais precisa de um nome`;
+    const rawOpts = Array.isArray(g.options) ? g.options.slice(0, 30) : [];
+    const options: ExtraOption[] = [];
+    for (let oi = 0; oi < rawOpts.length; oi++) {
+      const o = (rawOpts[oi] && typeof rawOpts[oi] === "object" ? rawOpts[oi] : {}) as Record<string, unknown>;
+      const oname = str(o.name, 40);
+      if (!oname) continue; // an empty line is just dropped
+      const price = num(o.price ?? 0, 0, 999);
+      if (price === null) return `${ctx}: valor inválido em "${oname}"`;
+      options.push({ id: `o${oi + 1}`, name: oname, price });
+    }
+    if (!options.length) return `${ctx}: o grupo "${gname}" precisa de ao menos uma opção`;
+    const max = int(g.max, 1, options.length) ?? options.length;
+    const min = int(g.min ?? 0, 0, max);
+    if (min === null) return `${ctx}: o mínimo de "${gname}" não pode passar do máximo`;
+    // shared groups keep their id (products point to it); own groups are numbered
+    let id = prefix === "x" ? slug(str(g.id, 30)) || `x${Date.now().toString(36)}${gi}` : `g${gi + 1}`;
+    const base = id;
+    for (let k = 2; used.has(id); k++) id = `${base}-${k}`.slice(0, 40);
+    used.add(id);
+    groups.push({ id, name: gname, min, max, options });
+  }
+  return groups;
+}
+
+/** Shared groups (Adicionais tab). */
+export function sanitizeExtras(raw: unknown): { ok: true; extras: ExtraGroup[] } | { ok: false; error: string } {
+  if (!Array.isArray(raw)) return { ok: false, error: "lista de adicionais inválida" };
+  const g = extraGroups(raw, "Adicionais", "x");
+  return typeof g === "string" ? { ok: false, error: g } : { ok: true, extras: g };
+}
 /** Returns the cleaned data, or a message in Portuguese saying what is wrong. */
 export function sanitizeStore(raw: unknown, catIds: string[]): { ok: true; data: StoreData } | { ok: false; error: string } {
   if (!raw || typeof raw !== "object") return { ok: false, error: "dados inválidos" };
@@ -129,7 +151,7 @@ export function sanitizeStore(raw: unknown, catIds: string[]): { ok: true; data:
   return {
     ok: true,
     // the promotions have their own screen and endpoint; the route keeps the saved ones
-    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, promos: [], cats: [], settings: defaultSettings(), updatedAt: Date.now() },
+    data: { open: r.open !== false, closedMessage: str(r.closedMessage, 200), products, promos: [], cats: [], extras: [], settings: defaultSettings(), updatedAt: Date.now() },
   };
 }
 
@@ -184,7 +206,7 @@ export function sanitizeCats(raw: unknown, products: Product[]): { ok: true; cat
         return { label: str(o.label, 24), value: str(o.value, 40) };
       })
       .filter((x) => x.label && x.value);
-    cats.push({ id, label, title, info });
+    cats.push({ id, label, title, info, ...(r.visible === false ? { visible: false } : {}) });
   }
   const missing = products.find((p) => !used.has(p.cat));
   if (missing) return { ok: false, error: `a categoria de "${missing.name}" foi removida; mova ou exclua os produtos dela antes` };

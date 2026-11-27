@@ -47,6 +47,10 @@ export type Order = {
   total: number;
   /** delivery fee included in the total (0 when none) */
   fee?: number;
+  /** status changes, oldest first (orders saved before this existed have none) */
+  history?: { status: OrderStatus; at: string }[];
+  /** discount given by the shop on the whole order, in R$ (already taken off total) */
+  discount?: number;
   /** has the customer paid? Orders saved before this existed count as pending */
   payStatus?: "pendente" | "pago";
   /** fingerprint used to ignore the same order sent twice */
@@ -152,7 +156,7 @@ const itemText = (o: Order) => o.items.map((i) => `${i.qty}x ${i.name}${i.size ?
 
 /** value of the products before any promotion, and what the promotions took off */
 export const grossOf = (o: Order) => o.items.reduce((a, i) => a + i.qty * (i.orig && i.orig > i.price ? i.orig : i.price), 0);
-export const discountOf = (o: Order) => o.items.reduce((a, i) => a + (i.orig && i.orig > i.price ? i.qty * (i.orig - i.price) : 0), 0);
+export const discountOf = (o: Order) => o.items.reduce((a, i) => a + (i.orig && i.orig > i.price ? i.qty * (i.orig - i.price) : 0), 0) + (o.discount ?? 0);
 
 export const CSV = {
   vendas: (orders: Order[]) => [

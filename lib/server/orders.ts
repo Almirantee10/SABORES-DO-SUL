@@ -108,7 +108,8 @@ export async function addOrder(base: NewOrder, force = false): Promise<string> {
       return null;
     }
     id = `${k}-${randomBytes(3).toString("hex")}`;
-    return [{ ...base, id, createdAt: new Date().toISOString(), status: "novo" }, ...list];
+    const at = new Date().toISOString();
+    return [{ ...base, id, createdAt: at, status: "novo", history: [{ status: "novo", at }] }, ...list];
   });
   return id;
 }
@@ -118,13 +119,23 @@ export async function repeatOrder(id: string): Promise<string | null> {
   const orders = await listOrders(12);
   const o = orders.find((x) => x.id === id);
   if (!o) return null;
-  const { id: _i, createdAt: _c, status: _s, payStatus: _p, sig: _g, ...rest } = o;
-  void _i; void _c; void _s; void _p; void _g;
+  const { id: _i, createdAt: _c, status: _s, payStatus: _p, sig: _g, history: _h, ...rest } = o;
+  void _i; void _c; void _s; void _p; void _g; void _h;
   return addOrder(rest, true);
 }
 
 export async function setStatus(id: string, status: OrderStatus): Promise<boolean> {
-  return patchOrder(id, { status });
+  if (!/^\d{4}-\d{2}-[0-9a-f]{6}$/.test(id)) return false;
+  let found = false;
+  await mutate(id.slice(0, 7), (list) => {
+    const o = list.find((x) => x.id === id);
+    if (!o) return null;
+    found = true;
+    if (o.status === status) return null;
+    const history = [...(o.history ?? [{ status: o.status, at: o.createdAt }]), { status, at: new Date().toISOString() }];
+    return list.map((x) => (x.id === id ? { ...x, status, history } : x));
+  });
+  return found;
 }
 
 export async function setPayStatus(id: string, payStatus: "pendente" | "pago"): Promise<boolean> {

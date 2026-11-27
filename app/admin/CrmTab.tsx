@@ -296,11 +296,11 @@ function Pedidos({ orders, onStatus, onPay, onRepeat, onEdit, onDelete, onCancel
           {STATUS.map((st, si) => {
             const col = list.filter((o) => o.status === st.id);
             return (
-              <section key={st.id} className={`kan-col st-${st.id}`}>
+              <section key={st.id} className={`kan-col st-${st.id}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => { const id = e.dataTransfer.getData("text/plain"); const dropped = orders.find((x) => x.id === id); if (dropped && dropped.status !== st.id) onStatus(id, st.id); }}>
                 <h3>{st.label} <em>{col.length}</em></h3>
                 {col.length === 0 && <p className="adm-note">Vazio</p>}
                 {col.map((o) => (
-                  <article key={o.id} className="kan-card">
+                  <article key={o.id} className="kan-card" draggable onDragStart={(e) => e.dataTransfer.setData("text/plain", o.id)}>
                     <header><b>{num(o.id)}</b><strong>{fmt(o.total)}</strong></header>
                     <p className="kan-who">{o.name}</p>
                     <p className="kan-sub">{o.delivery === "entrega" ? "Entrega" : "Retirada"} · {fmtDate(o.date)} {o.time}</p>
@@ -362,11 +362,19 @@ function Clientes({ orders }: { orders: Order[] }) {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<string | null>(null);
   const all = useMemo(() => byCustomer(orders), [orders]);
-  const list = all.filter((c) => !q.trim() || (c.name + " " + c.phone).toLowerCase().includes(q.trim().toLowerCase()));
+  const [sort, setSort] = useState<"gasto" | "pedidos" | "recente">("gasto");
+  const list = all
+    .filter((c) => !q.trim() || (c.name + " " + c.phone).toLowerCase().includes(q.trim().toLowerCase()))
+    .sort((a, b) => (sort === "pedidos" ? b.orders - a.orders : sort === "recente" ? b.last.localeCompare(a.last) : b.total - a.total));
   return (
     <>
       <div className="crm-filters">
         <label className="search"><Search size={16} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar cliente" aria-label="Buscar cliente" /></label>
+        <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Ordenar clientes">
+          <option value="gasto">Quem mais gastou</option>
+          <option value="pedidos">Mais pedidos (frequentes)</option>
+          <option value="recente">Compra mais recente</option>
+        </select>
         <button className="btn btn-outline btn-sm" onClick={() => downloadCsv("clientes", CSV.clientes(list))}><Download size={15} /> <span>Exportar clientes</span></button>
       </div>
       <p className="adm-note">{list.length} cliente(s). Toque em um cliente para ver o histórico.</p>
@@ -375,7 +383,7 @@ function Clientes({ orders }: { orders: Order[] }) {
         return (
           <section key={c.key} className={`cust${open === c.key ? " open" : ""}`}>
             <button className="cust-head" onClick={() => setOpen(open === c.key ? null : c.key)} aria-expanded={open === c.key}>
-              <div><b>{c.name}</b><small>{c.phone}</small></div>
+              <div><b>{c.name}{c.orders >= 5 ? <span className="adm-tag-freq">Frequente</span> : null}</b><small>{c.phone}</small></div>
               <div className="cust-nums"><span>{c.orders} pedido(s)</span><span>ticket {fmt(c.ticket)}</span><strong>{fmt(c.total)}</strong></div>
             </button>
             {open === c.key && (

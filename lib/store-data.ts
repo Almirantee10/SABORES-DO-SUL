@@ -1,8 +1,9 @@
 import { CATALOG, CATS, PAY, TAB_INFO, WA, type Product } from "@/lib/data";
 import type { Promo } from "@/lib/promo";
+import type { ExtraGroup } from "@/lib/data";
 import { defaultSchedule, type Schedule } from "@/lib/schedule";
 
-export type Cat = { id: string; label: string; title: string; info: { label: string; value: string }[] };
+export type Cat = { id: string; label: string; title: string; info: { label: string; value: string }[]; /** false = hidden from the public menu */ visible?: boolean };
 
 /** Contact, delivery, payment and the texts the customer reads. */
 export type Settings = {
@@ -43,6 +44,8 @@ export type StoreData = {
   products: Product[];
   promos: Promo[];
   cats: Cat[];
+  /** shared groups of extras, linked to products by extraIds */
+  extras: ExtraGroup[];
   settings: Settings;
   updatedAt: number;
 };
@@ -85,6 +88,7 @@ export const withDescUpdates = (d: StoreData): StoreData => ({
   ...d,
   promos: Array.isArray(d.promos) ? d.promos : [],
   cats: Array.isArray(d.cats) && d.cats.length ? d.cats : defaultCats(),
+  extras: Array.isArray(d.extras) ? d.extras : [],
   settings: { ...defaultSettings(), ...(d.settings ?? {}) },
   products: d.products.map((p) => (DESC_UPDATES[p.id]?.from === p.desc ? { ...p, desc: DESC_UPDATES[p.id].to } : p)),
 });
@@ -95,6 +99,7 @@ export const defaultStore = (): StoreData => ({
   products: CATALOG,
   promos: [],
   cats: defaultCats(),
+  extras: [],
   settings: defaultSettings(),
   updatedAt: 0,
 });

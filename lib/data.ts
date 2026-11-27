@@ -37,6 +37,8 @@ export type Product = {
   paused?: boolean;
   sizes?: Size[];
   extras?: ExtraGroup[];
+  /** ids of the shared groups (Adicionais tab) that also apply to this product */
+  extraIds?: string[];
   flavors?: string[];
   pick?: number;
   price?: number;
